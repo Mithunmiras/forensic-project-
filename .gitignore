@@ -1,0 +1,44 @@
+# --- Secrets / environment ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Large trained model artifacts ---
+# Excluded: random_forest_sales_model.pkl (~100.6 MiB) exceeds GitHub's
+# 100 MiB per-file limit. Preprocessor is excluded alongside it since it's
+# only useful paired with the model. Retrain via src/ml/random_forest.py.
+models/*.pkl
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Logs ---
+*.log
