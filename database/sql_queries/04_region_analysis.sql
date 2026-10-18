@@ -9,7 +9,7 @@ SELECT
     market,
     SUM(sales) AS total_sales,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY market
 ORDER BY total_sales DESC;
 
@@ -21,7 +21,7 @@ SELECT
     region,
     SUM(sales) AS total_sales,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY region
 ORDER BY total_sales DESC;
 
@@ -33,7 +33,7 @@ SELECT
     country,
     SUM(sales) AS total_sales,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY country
 ORDER BY total_sales DESC
 LIMIT 10;
@@ -45,7 +45,7 @@ LIMIT 10;
 SELECT
     state,
     SUM(sales) AS total_sales
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY state
 ORDER BY total_sales DESC
 LIMIT 10;
@@ -57,7 +57,7 @@ LIMIT 10;
 SELECT
     city,
     SUM(sales) AS total_sales
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY city
 ORDER BY total_sales DESC
 LIMIT 10;
@@ -69,6 +69,6 @@ LIMIT 10;
 SELECT
     market,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY market
 ORDER BY total_profit DESC;

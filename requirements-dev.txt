@@ -1,0 +1,3 @@
+-r requirements.txt
+-r requirements-localdb.txt
+pytest>=8.0

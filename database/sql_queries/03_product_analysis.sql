@@ -10,7 +10,7 @@ SELECT
     category,
     sub_category,
     SUM(sales) AS total_sales
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY product_name, category, sub_category
 ORDER BY total_sales DESC
 LIMIT 10;
@@ -23,7 +23,7 @@ SELECT
     product_name,
     category,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY product_name, category
 ORDER BY total_profit DESC
 LIMIT 10;
@@ -36,7 +36,7 @@ SELECT
     product_name,
     category,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY product_name, category
 ORDER BY total_profit ASC
 LIMIT 10;
@@ -50,7 +50,7 @@ SELECT
     SUM(sales) AS total_sales,
     SUM(profit) AS total_profit,
     ROUND(AVG(discount),2) AS avg_discount
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY category
 ORDER BY total_sales DESC;
 
@@ -62,7 +62,7 @@ SELECT
     sub_category,
     SUM(sales) AS total_sales,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY sub_category
 ORDER BY total_sales DESC;
 
@@ -74,7 +74,7 @@ SELECT
     product_name,
     COUNT(*) AS total_orders,
     SUM(quantity) AS total_quantity
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY product_name
 ORDER BY total_orders DESC
 LIMIT 10;
@@ -86,6 +86,6 @@ LIMIT 10;
 SELECT
     category,
     ROUND(AVG(discount),2) AS average_discount
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY category
 ORDER BY average_discount DESC;

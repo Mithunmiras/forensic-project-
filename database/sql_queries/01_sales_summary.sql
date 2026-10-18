@@ -3,4 +3,4 @@ SELECT
     SUM(sales) AS total_sales,
     SUM(profit) AS total_profit,
     AVG(discount) AS average_discount
-FROM superstore;
+FROM retailiq.v_sales;

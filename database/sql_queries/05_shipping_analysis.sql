@@ -7,7 +7,7 @@
 ------------------------------------------------------------
 SELECT
     ROUND(AVG(shipping_days),2) AS avg_shipping_days
-FROM superstore;
+FROM retailiq.v_sales;
 
 
 ------------------------------------------------------------
@@ -16,7 +16,7 @@ FROM superstore;
 SELECT
     ship_mode,
     ROUND(AVG(shipping_days),2) AS avg_shipping_days
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY ship_mode
 ORDER BY avg_shipping_days;
 
@@ -27,7 +27,7 @@ ORDER BY avg_shipping_days;
 SELECT
     ship_mode,
     SUM(shipping_cost) AS total_shipping_cost
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY ship_mode
 ORDER BY total_shipping_cost DESC;
 
@@ -38,7 +38,7 @@ ORDER BY total_shipping_cost DESC;
 SELECT
     ship_mode,
     COUNT(*) AS total_orders
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY ship_mode
 ORDER BY total_orders DESC;
 
@@ -48,7 +48,7 @@ ORDER BY total_orders DESC;
 ------------------------------------------------------------
 SELECT
     ROUND(AVG(shipping_cost),2) AS avg_shipping_cost
-FROM superstore;
+FROM retailiq.v_sales;
 
 
 ------------------------------------------------------------
@@ -58,6 +58,6 @@ SELECT
     order_id,
     customer_name,
     shipping_cost
-FROM superstore
+FROM retailiq.v_sales
 ORDER BY shipping_cost DESC
 LIMIT 10;

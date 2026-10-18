@@ -1,29 +1,19 @@
-import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # headless: figures are saved, not shown
 import matplotlib.pyplot as plt
-from sqlalchemy import create_engine
 
-engine = create_engine(
-    "postgresql://postgres:yogesh123@localhost:5432/retailiq_db"
-)
+from src.data import load_sales
 
-query = """
-SELECT
-    year,
-    SUM(sales) AS total_sales
-FROM superstore
-GROUP BY year
-ORDER BY year;
-"""
+df = load_sales().groupby("year", as_index=False)["sales"].sum().rename(columns={"sales": "total_sales"})
 
-df = pd.read_sql(query, engine)
-
-plt.figure(figsize=(8,5))
+plt.figure(figsize=(8, 5))
 plt.plot(df["year"], df["total_sales"], marker="o")
 plt.title("Total Sales by Year")
 plt.xlabel("Year")
 plt.ylabel("Sales")
+plt.xticks(df["year"])
 plt.grid(True)
-
 plt.savefig("reports/figures/sales_by_year.png")
+plt.close()
 
-plt.show()
+print("Sales EDA completed successfully!")

@@ -3,7 +3,7 @@ SELECT
     customer_name,
     SUM(sales) AS total_sales,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY customer_name
 ORDER BY total_sales DESC
 LIMIT 10;
@@ -14,7 +14,7 @@ LIMIT 10;
 SELECT
     customer_name,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY customer_name
 ORDER BY total_profit DESC
 LIMIT 10;
@@ -27,7 +27,7 @@ SELECT
     COUNT(DISTINCT customer_id) AS customers,
     SUM(sales) AS total_sales,
     SUM(profit) AS total_profit
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY segment;
 
 ------------------------------------------------
@@ -36,7 +36,7 @@ GROUP BY segment;
 SELECT
     customer_name,
     ROUND(AVG(sales),2) AS average_sales
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY customer_name
 ORDER BY average_sales DESC
 LIMIT 10;
@@ -47,7 +47,7 @@ LIMIT 10;
 SELECT
     customer_name,
     COUNT(DISTINCT order_id) AS total_orders
-FROM superstore
+FROM retailiq.v_sales
 GROUP BY customer_name
 HAVING COUNT(DISTINCT order_id) > 10
 ORDER BY total_orders DESC;

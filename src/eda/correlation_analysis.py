@@ -1,14 +1,12 @@
-import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # headless: figures are saved, not shown
 import matplotlib.pyplot as plt
-from sqlalchemy import create_engine
+import pandas as pd
 
-# Database Connection
-engine = create_engine(
-    "postgresql://postgres:yogesh123@localhost:5432/retailiq_db"
-)
+from src.data import load_sales
 
 # Load Data
-df = pd.read_sql("SELECT * FROM superstore", engine)
+df = load_sales()
 
 # Numeric columns for correlation
 numeric_df = df[
@@ -44,6 +42,6 @@ plt.tight_layout()
 
 plt.savefig("reports/figures/correlations/correlation_matrix.png")
 
-plt.show()
+plt.close()
 
 print("\nCorrelation analysis completed successfully!")

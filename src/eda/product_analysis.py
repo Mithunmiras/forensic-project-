@@ -1,14 +1,12 @@
-import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # headless: figures are saved, not shown
 import matplotlib.pyplot as plt
-from sqlalchemy import create_engine
+import pandas as pd
 
-# Database Connection
-engine = create_engine(
-    "postgresql://postgres:yogesh123@localhost:5432/retailiq_db"
-)
+from src.data import load_sales
 
 # Load Data
-df = pd.read_sql("SELECT * FROM superstore", engine)
+df = load_sales()
 
 # -------------------------------
 # 1. Sales by Category
@@ -27,7 +25,7 @@ plt.ylabel("Total Sales")
 plt.xticks(rotation=0)
 plt.tight_layout()
 plt.savefig("reports/figures/products/sales_by_category.png")
-plt.show()
+plt.close()
 
 # -------------------------------
 # 2. Profit by Category
@@ -46,7 +44,7 @@ plt.ylabel("Total Profit")
 plt.xticks(rotation=0)
 plt.tight_layout()
 plt.savefig("reports/figures/products/profit_by_category.png")
-plt.show()
+plt.close()
 
 # -------------------------------
 # 3. Top 10 Products by Sales
@@ -66,7 +64,7 @@ plt.ylabel("Total Sales")
 plt.xticks(rotation=60, ha="right")
 plt.tight_layout()
 plt.savefig("reports/figures/products/top10_products_sales.png")
-plt.show()
+plt.close()
 
 # -------------------------------
 # 4. Sales by Sub-Category
@@ -85,6 +83,6 @@ plt.ylabel("Total Sales")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.savefig("reports/figures/products/sales_by_subcategory.png")
-plt.show()
+plt.close()
 
 print("Product EDA completed successfully!")

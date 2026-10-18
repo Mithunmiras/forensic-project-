@@ -1,14 +1,12 @@
-import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # headless: figures are saved, not shown
 import matplotlib.pyplot as plt
-from sqlalchemy import create_engine
+import pandas as pd
 
-# Database Connection
-engine = create_engine(
-    "postgresql://postgres:yogesh123@localhost:5432/retailiq_db"
-)
+from src.data import load_sales
 
 # Load Data
-df = pd.read_sql("SELECT * FROM superstore", engine)
+df = load_sales()
 
 # -------------------------------
 # 1. Sales by Market
@@ -27,7 +25,7 @@ plt.ylabel("Total Sales")
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.savefig("reports/figures/regions/sales_by_market.png")
-plt.show()
+plt.close()
 
 # -------------------------------
 # 2. Profit by Region
@@ -46,7 +44,7 @@ plt.ylabel("Total Profit")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.savefig("reports/figures/regions/profit_by_region.png")
-plt.show()
+plt.close()
 
 # -------------------------------
 # 3. Top 10 Countries by Sales
@@ -66,7 +64,7 @@ plt.ylabel("Total Sales")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.savefig("reports/figures/regions/top10_countries_sales.png")
-plt.show()
+plt.close()
 
 # -------------------------------
 # 4. Top 10 Cities by Sales
@@ -86,6 +84,6 @@ plt.ylabel("Total Sales")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.savefig("reports/figures/regions/top10_cities_sales.png")
-plt.show()
+plt.close()
 
 print("Region EDA completed successfully!")

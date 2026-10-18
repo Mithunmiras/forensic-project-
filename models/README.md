@@ -1,11 +1,9 @@
 # models/
 
-This directory is intentionally empty in git.
+Trained artifacts are generated locally and not committed:
 
-`random_forest_sales_model.pkl` and `random_forest_preprocessor.pkl` are
-generated locally by `src/ml/random_forest.py` and are excluded via
-`.gitignore` (the model file exceeds GitHub's 100 MiB per-file limit, and
-both are fully reproducible from the committed dataset and training script).
+- `sales_model.joblib` - best model + prediction-interval models + form options (~0.8 MiB)
+- `metrics.json` - model comparison, feature importance and hold-out results shown in the UI
 
-See the "Reproducing the trained model" section in the top-level `README.md`
-for the exact steps.
+Create them with `python main.py train` (about 15 seconds). If they are missing
+the API trains them automatically on first start.
