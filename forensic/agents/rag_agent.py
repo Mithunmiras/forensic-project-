@@ -1,7 +1,7 @@
 """RAG agent - retrieves the "why" from unstructured documents.
 
 Documents are chunked by paragraph and embedded as TF-IDF vectors (word 1-2 grams) in an
-in-memory vector index - local, free and deterministic. A sentence-transformer + Chroma/FAISS
+in-memory numpy vector index (forensic/textindex.py) - local, free and deterministic. A sentence-transformer + Chroma/FAISS
 would slot in behind the same `_similarity` call.
 
 Retrieval is metadata-first: a chunk must match the product, the region (or be company-wide)
@@ -20,12 +20,11 @@ from datetime import date, timedelta
 from typing import Optional
 
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from forensic.catalog import CAUSES
 from forensic.config import DOC_LOOKBACK_DAYS
 from forensic.store import DataStore, Document
+from forensic.textindex import TfidfIndex
 
 CAUSE_LEXICON = {
     "supplier_delay": ["shipment", "delayed", "delay", "port congestion", "component shortage", "shortage",
@@ -91,12 +90,11 @@ class RAGAgent:
         for d in store.documents:
             for i, p in enumerate(d.paragraphs):
                 self.chunks.append((d, i, p))
-        self.vectorizer = TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True, stop_words="english")
-        self.matrix = self.vectorizer.fit_transform([f"{d.title}. {t}" for d, _, t in self.chunks])
+        self.index = TfidfIndex([f"{d.title}. {t}" for d, _, t in self.chunks])
         self.classes = {d.path: classify(d) for d in store.documents}
 
     def _similarity(self, query: str) -> np.ndarray:
-        return cosine_similarity(self.vectorizer.transform([query]), self.matrix)[0]
+        return self.index.similarity(query)
 
     def run(self, question: str, product_id: Optional[str], region: Optional[str], month: Optional[str],
             top_k: int = 5) -> dict:

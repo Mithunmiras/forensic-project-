@@ -8,7 +8,6 @@ DATA_DIR = ROOT / "data"
 STRUCTURED_DIR = DATA_DIR / "structured"
 UNSTRUCTURED_DIR = DATA_DIR / "unstructured"
 CATALOG_PATH = STRUCTURED_DIR / "catalog.json"   # NoSQL-style document store (product + supplier documents)
-DB_PATH = DATA_DIR / "forensic.sqlite"           # SQL store built from the CSVs
 UI_DIST = ROOT / "forensic_ui" / "dist"
 
 START_DATE = "2025-10-01"

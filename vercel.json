@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm --prefix forensic_ui ci",
+  "buildCommand": "npm --prefix forensic_ui run build",
+  "outputDirectory": "forensic_ui/dist",
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{forensic_ui/**,tests/**,.venv/**,**/__pycache__/**}"
+    }
+  }
+}

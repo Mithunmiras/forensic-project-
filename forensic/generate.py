@@ -7,20 +7,19 @@
 4. Routine documents (policies, quarterly QC, supplier status, feedback summaries) are added
    so that the RAG agent has to ignore irrelevant text rather than retrieve everything.
 
-Output: data/structured/*.csv, data/structured/catalog.json, data/forensic.sqlite and
+Output: data/structured/*.csv, data/structured/catalog.json and
 data/unstructured/<PRODUCT>/*.txt (+ .json). Deterministic for a given seed.
 """
 from __future__ import annotations
 
 import json
 import shutil
-import sqlite3
 
 import numpy as np
 import pandas as pd
 
 from forensic.catalog import PRODUCTS, REGION_WEIGHT, REGIONS, SUPPLIERS, WAREHOUSE
-from forensic.config import (CATALOG_PATH, DB_PATH, END_DATE, SEED, START_DATE, STRUCTURED_DIR,
+from forensic.config import (CATALOG_PATH, END_DATE, SEED, START_DATE, STRUCTURED_DIR,
                              UNSTRUCTURED_DIR)
 from forensic.scenarios import SCENARIOS
 
@@ -190,14 +189,6 @@ def generate(seed: int = SEED) -> dict:
         df.to_csv(STRUCTURED_DIR / f"{name}.csv", index=False)
     CATALOG_PATH.write_text(json.dumps(_catalog_documents(), indent=2) + "\n", encoding="utf-8")
 
-    if DB_PATH.exists():
-        DB_PATH.unlink()
-    with sqlite3.connect(DB_PATH) as con:
-        for name, df in tables.items():
-            df.to_sql(name, con, index=False)
-        con.execute("CREATE INDEX ix_sales ON sales(product_id, region, date)")
-        con.execute("CREATE INDEX ix_inventory ON inventory(product_id, warehouse, date)")
-
     incident_docs = 0
     for sc in SCENARIOS:
         doc = sc.get("doc")
@@ -213,5 +204,5 @@ def generate(seed: int = SEED) -> dict:
 
 
 def ensure_data() -> None:
-    if not (DB_PATH.exists() and CATALOG_PATH.exists() and UNSTRUCTURED_DIR.exists()):
+    if not ((STRUCTURED_DIR / "sales.csv").exists() and CATALOG_PATH.exists() and UNSTRUCTURED_DIR.exists()):
         generate()

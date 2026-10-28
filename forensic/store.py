@@ -9,7 +9,7 @@ from functools import lru_cache
 
 import pandas as pd
 
-from forensic.config import CATALOG_PATH, DB_PATH, UNSTRUCTURED_DIR
+from forensic.config import CATALOG_PATH, STRUCTURED_DIR, UNSTRUCTURED_DIR
 from forensic.generate import ensure_data
 
 
@@ -33,12 +33,23 @@ class Document:
 class DataStore:
     def __init__(self) -> None:
         ensure_data()
-        self._con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True, check_same_thread=False)
+        self._con = self._load_sql()
         self._lock = threading.Lock()
         self.catalog = {d["_id"]: d for d in json.loads(CATALOG_PATH.read_text(encoding="utf-8"))}
         self.documents = self._load_documents()
         self.sales = self.query("SELECT * FROM sales")
         self.months = sorted(self.sales["date"].str[:7].unique().tolist())
+
+    @staticmethod
+    def _load_sql() -> sqlite3.Connection:
+        """In-memory SQLite built from the CSVs: nothing is written to disk (serverless-safe)."""
+        con = sqlite3.connect(":memory:", check_same_thread=False)
+        for name in ("products", "sales", "inventory", "suppliers"):
+            pd.read_csv(STRUCTURED_DIR / f"{name}.csv").to_sql(name, con, index=False)
+        con.execute("CREATE INDEX ix_sales ON sales(product_id, region, date)")
+        con.execute("CREATE INDEX ix_inventory ON inventory(product_id, warehouse, date)")
+        con.execute("PRAGMA query_only = ON")
+        return con
 
     def query(self, sql: str, params: tuple = ()) -> pd.DataFrame:
         with self._lock:
