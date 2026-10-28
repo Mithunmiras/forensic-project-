@@ -1,0 +1,10 @@
+Title: Quarterly Quality Summary: MacBook Air
+Document type: quality_summary
+Product: MacBook Air (MACBOOKAIR)
+Region: ALL
+Date: 2026-02-15
+Author: Quality Engineering
+
+Incoming inspection and field data for MacBook Air across all regions show a defect rate of 0.2% against the 0.2% baseline, within normal tolerance.
+
+No anomalies were found in the batches reviewed this quarter; no action required.

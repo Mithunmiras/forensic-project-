@@ -1,0 +1,12 @@
+Title: Quality Control Report: iPhone 15 West region batches
+Document type: quality_report
+Product: iPhone 15 (IPHONE15)
+Region: West
+Date: 2026-04-06
+Author: Quality Engineering
+
+Batch QC flagged an elevated screen defect rate of 2.1% against a 0.3% baseline in units shipped to West region stores in early April (batches W-2604-11 to W-2604-19).
+
+Most failures are display flicker and dead-pixel clusters appearing within the first week of use. Field returns citing a faulty screen have risen sharply at West region stores.
+
+Recommended action: hold the affected batches pending root-cause analysis with the display panel vendor and prioritise replacement units for affected customers.

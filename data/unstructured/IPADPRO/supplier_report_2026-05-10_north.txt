@@ -1,0 +1,12 @@
+Title: Supplier Update: iPad Pro shipments
+Document type: supplier_report
+Product: iPad Pro (IPADPRO)
+Region: North
+Date: 2026-05-10
+Author: Compal Electronics - Customer Programs
+
+Because of a component shortage of mini-LED backlight units at our panel sub-supplier, iPad Pro shipments to the North region are delayed by about one week.
+
+We are prioritising open orders by contract date. Distribution centre WH_NORTH_01 will receive its next shipment around 19 May instead of 12 May.
+
+We will share a recovery schedule once the sub-supplier confirms volumes.

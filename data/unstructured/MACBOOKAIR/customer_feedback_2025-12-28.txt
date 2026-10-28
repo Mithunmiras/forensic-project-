@@ -1,0 +1,10 @@
+Title: Customer Feedback Summary: MacBook Air
+Document type: customer_feedback
+Product: MacBook Air (MACBOOKAIR)
+Region: ALL
+Date: 2025-12-28
+Author: Customer Support Analytics
+
+Sentiment for MacBook Air across all regions remained stable at 4.3 out of 5.
+
+The most common themes were delivery speed and software updates. There was no significant change in complaint volumes versus the previous quarter.

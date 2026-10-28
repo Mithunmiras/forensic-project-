@@ -1,0 +1,12 @@
+Title: Logistics Notice: South region transport strike
+Document type: logistics_notice
+Product: AirPods Pro (AIRPODSPRO)
+Region: South
+Date: 2026-02-08
+Author: Distribution Operations, South
+
+A regional trucking strike began on 8 February, halting road transport from the port terminal to WH_SOUTH_01. Carrier partners have suspended all scheduled deliveries into the South region.
+
+Warehouse stock of AirPods Pro is expected to run out within a day. Inbound pallets are held at the terminal until the strike is resolved.
+
+Union talks are ongoing; carriers estimate 10 to 12 days before normal delivery schedules resume.

@@ -1,0 +1,10 @@
+Title: Customer Feedback Summary: iPhone 15
+Document type: customer_feedback
+Product: iPhone 15 (IPHONE15)
+Region: ALL
+Date: 2025-12-28
+Author: Customer Support Analytics
+
+Sentiment for iPhone 15 across all regions remained stable at 4.6 out of 5.
+
+The most common themes were value for money and accessory compatibility. There was no significant change in complaint volumes versus the previous quarter.

@@ -1,0 +1,8 @@
+product_id,product_name,category,launch_date,unit_price,supplier_id
+IPHONE15,iPhone 15,Smartphones,2025-09-20,799.0,SUP_FOXCONN
+MACBOOKAIR,MacBook Air,Laptops,2025-03-10,1099.0,SUP_QUANTA
+IPADPRO,iPad Pro,Tablets,2025-05-15,999.0,SUP_COMPAL
+APPLEWATCH,Apple Watch,Wearables,2025-09-20,399.0,SUP_LUXSHARE
+AIRPODSPRO,AirPods Pro,Audio,2025-09-20,249.0,SUP_LUXSHARE
+HOMEPOD,HomePod mini,Smart Home,2024-11-01,99.0,SUP_INVENTEC
+VISIONPRO,Vision Pro,Spatial Computing,2026-02-02,3499.0,SUP_LUXSHARE

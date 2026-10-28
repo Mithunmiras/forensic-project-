@@ -1,0 +1,10 @@
+Title: Quarterly Quality Summary: AirPods Pro
+Document type: quality_summary
+Product: AirPods Pro (AIRPODSPRO)
+Region: ALL
+Date: 2026-02-15
+Author: Quality Engineering
+
+Incoming inspection and field data for AirPods Pro across all regions show a defect rate of 0.4% against the 0.4% baseline, within normal tolerance.
+
+No anomalies were found in the batches reviewed this quarter; no action required.

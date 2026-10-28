@@ -1,0 +1,10 @@
+Title: Customer Feedback Summary: AirPods Pro
+Document type: customer_feedback
+Product: AirPods Pro (AIRPODSPRO)
+Region: ALL
+Date: 2026-06-25
+Author: Customer Support Analytics
+
+Sentiment for AirPods Pro across all regions remained stable at 4.5 out of 5.
+
+The most common themes were accessory compatibility and software updates. There was no significant change in complaint volumes versus the previous quarter.
