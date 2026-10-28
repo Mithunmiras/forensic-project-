@@ -1,23 +1,10 @@
-# RetailIQ runtime dependencies (Python 3.11+). Tested with the versions noted in docs/09_running.md.
-
-# --- API ---
-fastapi>=0.115,<1
-uvicorn>=0.30
-pydantic>=2.7,<3
-pydantic-settings>=2.4,<3
-httpx>=0.27                  # Ollama client
-
-# --- database ---
-sqlalchemy>=2.0,<2.2
-psycopg[binary]>=3.2,<4      # PostgreSQL driver (psycopg 3)
-sqlglot>=30,<31              # SQL syntax-tree validation for the natural-language SQL agent
-
-# --- data / ML ---
-numpy>=2.0
-pandas>=2.2
-scikit-learn>=1.5
-joblib>=1.4
-matplotlib>=3.9              # EDA figures
-
-# --- RAG ---
-chromadb>=1.0,<2             # vector store (+ local ONNX MiniLM embeddings)
+# RetailIQ Forensic - Python 3.9+
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.3
+statsmodels>=0.14
+fastapi>=0.110
+uvicorn[standard]>=0.29
+# tests
+pytest>=7
+httpx>=0.27

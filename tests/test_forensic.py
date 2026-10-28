@@ -1,4 +1,4 @@
-"""Tests for the forensic multi-agent pipeline. Run: .venv/bin/python -m pytest tests_forensic"""
+"""Tests for the forensic multi-agent pipeline. Run: .venv/bin/python -m pytest"""
 from __future__ import annotations
 
 import pytest
