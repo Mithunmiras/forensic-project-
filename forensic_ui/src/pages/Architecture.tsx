@@ -11,7 +11,7 @@ const CASES = [
 export default function Architecture({ meta }: { meta: Meta }) {
   return (
     <div className="stack">
-      <div>
+      <div className="page-head">
         <h1>How RetailIQ investigates</h1>
         <p className="lede">
           A question goes to an orchestrator, which fans out to specialist agents. A single synthesis agent then fuses

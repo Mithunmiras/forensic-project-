@@ -40,12 +40,12 @@ export default function Scan({ meta, onInvestigate }: { meta: Meta; onInvestigat
 
   return (
     <div className="stack">
-      <div>
+      <div className="page-head">
         <h1>Anomaly scan</h1>
         <p className="lede">
           Every product × region × month, compared with the same series' other months (median baseline, robust z-score).
           Outlined cells are anomalies: |z| ≥ 3 and a material change, or a stock-out, returns spike, discount or price
-          change. Click any cell to investigate it.
+          change. Tap any cell to investigate it.
         </p>
       </div>
       <div className="grid-4">
@@ -68,10 +68,11 @@ export default function Scan({ meta, onInvestigate }: { meta: Meta; onInvestigat
         </div>
         <div className="stack" style={{ gap: 22 }}>
           {products.map((p) => (
-            <div key={p.product_id} className="table-wrap">
-              <h3 style={{ marginBottom: 4 }}>
+            <div key={p.product_id}>
+              <h3 className="row" style={{ marginBottom: 4 }}>
                 {p.product_name} {!p.has_documents && <span className="badge warn">no documents on file</span>}
               </h3>
+              <div className="heat-wrap">
               <table className="heat">
                 <thead>
                   <tr>
@@ -120,6 +121,7 @@ export default function Scan({ meta, onInvestigate }: { meta: Meta; onInvestigat
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           ))}
         </div>

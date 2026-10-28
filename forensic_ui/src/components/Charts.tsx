@@ -13,11 +13,11 @@ import {
   YAxis,
 } from "recharts";
 import { Investigation, monthLabel } from "../api";
+import { useIsPhone } from "../hooks";
 
 const AXIS = { fontSize: 11, fill: "var(--muted)" };
 const fmt = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 0 });
-const shortMonth = (m: string) =>
-  `${new Date(`${m}-01T00:00:00`).toLocaleString("en-US", { month: "short" })} '${m.slice(2, 4)}`;
+const shortMonth = (m: string) => new Date(`${m}-01T00:00:00`).toLocaleString("en-US", { month: "short" });
 const shortDate = (d: string) =>
   new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
@@ -65,6 +65,7 @@ function windowed(inv: Investigation) {
 }
 
 export function DailyChart({ inv }: { inv: Investigation }) {
+  const phone = useIsPhone();
   const { data, monthStart, monthEnd } = windowed(inv);
   const st = inv.agents.sql.stockout;
   const base = inv.agents.sql.target?.units_per_day_base as number | undefined;
@@ -78,14 +79,14 @@ export function DailyChart({ inv }: { inv: Investigation }) {
         <span><i className="box" style={{ background: "var(--surface-2)" }} />{monthLabel(inv.agents.sql.month)}</span>
         {st && st.days > 0 && <span><i className="box" style={{ background: "var(--critical-soft)" }} />Stock-out days</span>}
       </div>
-      <ResponsiveContainer width="100%" height={260}>
+      <ResponsiveContainer width="100%" height={phone ? 210 : 270}>
         <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
           <CartesianGrid stroke="var(--grid)" vertical={false} />
           {monthStart && <ReferenceArea x1={monthStart} x2={monthEnd} fill="var(--surface-2)" fillOpacity={1} />}
           {st?.first && <ReferenceArea x1={st.first} x2={st.last!} fill="var(--critical-soft)" fillOpacity={1} />}
-          <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} minTickGap={40} tickLine={false}
+          <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} minTickGap={phone ? 28 : 40} tickLine={false}
             axisLine={{ stroke: "var(--border)" }} />
-          <YAxis tick={AXIS} tickFormatter={fmt} width={48} tickLine={false} axisLine={false} />
+          <YAxis tick={AXIS} tickFormatter={fmt} width={phone ? 40 : 48} tickLine={false} axisLine={false} />
           {base && <ReferenceLine y={base} stroke="var(--muted)" strokeDasharray="4 4" />}
           <Tooltip content={<Tip />} />
           <Line name="Units sold" dataKey="units" stroke="var(--series-1)" strokeWidth={2} dot={false}
@@ -99,6 +100,7 @@ export function DailyChart({ inv }: { inv: Investigation }) {
 }
 
 export function StockChart({ inv }: { inv: Investigation }) {
+  const phone = useIsPhone();
   const { data, monthStart, monthEnd } = windowed(inv);
   const st = inv.agents.sql.stockout;
   const rows = data.filter((r) => r.stock !== undefined);
@@ -108,14 +110,14 @@ export function StockChart({ inv }: { inv: Investigation }) {
         <span><i style={{ borderColor: "var(--series-1)" }} />Stock level ({st?.warehouse})</span>
         <span><i className="dash" style={{ borderColor: "var(--critical)" }} />Reorder point</span>
       </div>
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={phone ? 180 : 210}>
         <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
           <CartesianGrid stroke="var(--grid)" vertical={false} />
           {monthStart && <ReferenceArea x1={monthStart} x2={monthEnd} fill="var(--surface-2)" fillOpacity={1} />}
           {st?.first && <ReferenceArea x1={st.first} x2={st.last!} fill="var(--critical-soft)" fillOpacity={1} />}
-          <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} minTickGap={40} tickLine={false}
+          <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} minTickGap={phone ? 28 : 40} tickLine={false}
             axisLine={{ stroke: "var(--border)" }} />
-          <YAxis tick={AXIS} tickFormatter={fmt} width={48} tickLine={false} axisLine={false} />
+          <YAxis tick={AXIS} tickFormatter={fmt} width={phone ? 40 : 48} tickLine={false} axisLine={false} />
           <Tooltip content={<Tip />} />
           <Line name="Stock" dataKey="stock" stroke="var(--series-1)" strokeWidth={2} dot={false}
             isAnimationActive={false} type="stepAfter" />
@@ -128,6 +130,7 @@ export function StockChart({ inv }: { inv: Investigation }) {
 }
 
 export function MonthlyChart({ inv }: { inv: Investigation }) {
+  const phone = useIsPhone();
   const sql = inv.agents.sql;
   const data = (sql.monthly ?? []).map((m) => ({ ...m, label: m.month }));
   const base = sql.target?.units_per_day_base as number | undefined;
@@ -138,12 +141,12 @@ export function MonthlyChart({ inv }: { inv: Investigation }) {
         <span><i className="box" style={{ background: "var(--series-1-soft)" }} />Other months</span>
         <span><i className="dash" style={{ borderColor: "var(--muted)" }} />Baseline (median of other months)</span>
       </div>
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={phone ? 180 : 210}>
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }} barCategoryGap={6}>
           <CartesianGrid stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="label" tickFormatter={shortMonth} tick={AXIS} tickLine={false}
             axisLine={{ stroke: "var(--border)" }} interval={0} />
-          <YAxis tick={AXIS} tickFormatter={fmt} width={48} tickLine={false} axisLine={false} />
+          <YAxis tick={AXIS} tickFormatter={fmt} width={phone ? 40 : 48} tickLine={false} axisLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: "var(--surface-2)" }} />
           {base && <ReferenceLine y={base} stroke="var(--muted)" strokeDasharray="4 4" />}
           <Bar name="Units/day" dataKey="units_per_day" radius={[4, 4, 0, 0]} isAnimationActive={false}>
