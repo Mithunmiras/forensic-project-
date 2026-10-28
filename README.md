@@ -17,12 +17,12 @@ Each claim carries a citation `[n]` pointing at a specific table slice, model or
 ./run_forensic.sh
 ```
 
-The script creates `.venv`, installs `requirements.txt`, builds the React dashboard (`forensic_ui/`, needs Node 18+), generates the synthetic data, and serves everything at **http://127.0.0.1:8000**. API docs are at `/docs`. Use `--port 8765` if port 8000 is busy. If it is, the server automatically picks the next free port.
+The script creates `.venv`, installs `requirements-dev.txt`, builds the React dashboard (`forensic_ui/`, needs Node 18+), generates the synthetic data, and serves everything at **http://127.0.0.1:8000**. API docs are at `/docs`. Use `--port 8765` if port 8000 is busy. If it is, the server automatically picks the next free port.
 
 Manual steps:
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 (cd forensic_ui && npm install && npm run build)
 .venv/bin/python -m forensic generate        # synthetic data from forensic/scenarios.py
 .venv/bin/python -m forensic serve           # http://127.0.0.1:8000
@@ -38,6 +38,19 @@ Other commands:
 
 UI development with hot reload: run `serve` in one terminal and `cd forensic_ui && npm run dev` in another. The UI is then at http://localhost:5173 and proxies `/api` to port 8000.
 
+## Deploy to Vercel
+
+The repo is ready for Vercel as is. `vercel.json` builds the React dashboard as static files, and `api/index.py` serves the FastAPI backend as a Python serverless function for every `/api/*` route.
+
+1. Go to https://vercel.com/new and import this GitHub repository.
+2. Leave all settings at their defaults (they come from `vercel.json`) and click **Deploy**.
+
+Or deploy from the terminal with `npx vercel` (first time) and `npx vercel --prod`.
+
+The backend is built for the serverless constraints:
+* It writes nothing to disk. SQLite is built in memory from the committed CSVs on cold start (about 1 s).
+* Runtime dependencies are only numpy, pandas, FastAPI and uvicorn, about 140 MB unpacked against Vercel's 250 MB function limit. TF-IDF retrieval and Holt-Winters forecasting are implemented in numpy rather than with scikit-learn and statsmodels, for this reason.
+
 ## Architecture
 
 ```
@@ -50,8 +63,8 @@ question → Orchestrator ─┬─ SQL / NoSQL Analytics Agent ─┐
 |---|---|---|
 | Orchestrator | `forensic/agents/orchestrator.py` | Extracts product (aliases), region, month (`March 2026`, `2026-03`, `mar`), intent and direction. Anything missing is filled by scanning for the most anomalous matching product/region/month, and the plan records how each field was decided. |
 | SQL / NoSQL Analytics | `forensic/agents/sql_agent.py` | Deterministic SQLite queries over `sales`, `inventory`, `products`, `suppliers`, plus a lookup in the catalog document store (`catalog.json`: nested product → primary/backup suppliers). Every query is returned for audit. No LLM. |
-| RAG | `forensic/agents/rag_agent.py` | Paragraph chunks with a TF-IDF (1–2 gram) vector index. The metadata filter runs first (product, region or company-wide, and a date window from 21 days before the month to its end), then ranking blends similarity and metadata. Each document is classified as **incident** (with a cause), **routine** (status report that rules causes out) or **reference** (policy). Near misses that were filtered out are reported. |
-| Forecast / RCA | `forensic/agents/rca_agent.py`, `forensic/metrics.py` | Robust z-score against a leave-one-out median baseline (MAD scale with a floor). Detects the structured signature: stock-out, returns spike, discount, price, demand up or down. Checks whether the change is local or market-wide. Forecasts the next month with Holt-Winters (damped trend, weekly seasonality), alongside "if the cause persists" and a held-out back-test. |
+| RAG | `forensic/agents/rag_agent.py` | Paragraph chunks with a TF-IDF (1–2 gram) vector index, implemented in numpy (`forensic/textindex.py`). The metadata filter runs first (product, region or company-wide, and a date window from 21 days before the month to its end), then ranking blends similarity and metadata. Each document is classified as **incident** (with a cause), **routine** (status report that rules causes out) or **reference** (policy). Near misses that were filtered out are reported. |
+| Forecast / RCA | `forensic/agents/rca_agent.py`, `forensic/metrics.py` | Robust z-score against a leave-one-out median baseline (MAD scale with a floor). Detects the structured signature: stock-out, returns spike, discount, price, demand up or down. Checks whether the change is local or market-wide. Forecasts the next month with Holt-Winters (damped trend, weekly seasonality; numpy implementation in `forensic/holtwinters.py`, parameters chosen by grid search), alongside "if the cause persists" and a held-out back-test. |
 | Synthesis / XAI | `forensic/agents/synthesis_agent.py` | Fuses the evidence. A document only explains an anomaly if its cause is compatible with the structured signature (a stock-out fits a supplier delay or logistics disruption, not a discount). Writes all four layers with citations, computes confidence, and is the only agent that writes recommendations. |
 
 The pipeline lives in `forensic/pipeline.py` and the API in `forensic/api.py`.

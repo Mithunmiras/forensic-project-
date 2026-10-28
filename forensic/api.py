@@ -20,7 +20,7 @@ from forensic.store import get_store
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    get_investigator()  # loads data, builds the vector index, imports statsmodels
+    get_investigator()  # loads data and builds the vector index
     yield
 
 

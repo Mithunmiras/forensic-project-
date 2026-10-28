@@ -9,9 +9,9 @@ if [ ! -x .venv/bin/python ]; then
   echo "==> Creating Python virtual environment"
   python3 -m venv .venv
 fi
-if ! .venv/bin/python -c "import pandas, sklearn, statsmodels, fastapi, uvicorn" 2>/dev/null; then
+if ! .venv/bin/python -c "import pandas, fastapi, uvicorn" 2>/dev/null; then
   echo "==> Installing Python dependencies"
-  .venv/bin/pip install -q -r requirements.txt
+  .venv/bin/pip install -q -r requirements-dev.txt
 fi
 if [ ! -f forensic_ui/dist/index.html ]; then
   command -v npm >/dev/null || { echo "Node.js (npm) is required to build the dashboard: https://nodejs.org"; exit 1; }

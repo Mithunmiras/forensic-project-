@@ -10,12 +10,12 @@ up to the end of the investigated month, projected over the next month. Also rep
 """
 from __future__ import annotations
 
-import warnings
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 
+from forensic import holtwinters
 from forensic.catalog import CAUSES, STRUCTURED_HYPOTHESES
 
 FAMILY_ORDER = ["supply", "returns", "discount", "price", "demand_down", "demand_up"]
@@ -84,8 +84,6 @@ class ForecastRCAAgent:
 
     @staticmethod
     def _forecast(sql: dict) -> Optional[dict]:
-        from statsmodels.tsa.holtwinters import ExponentialSmoothing
-
         daily = pd.DataFrame(sql["daily"])
         daily["date"] = pd.to_datetime(daily["date"])
         series = daily.set_index("date")["units"].astype(float).asfreq("D")
@@ -95,11 +93,7 @@ class ForecastRCAAgent:
         horizon = pd.date_range(next_period.start_time, next_period.end_time.normalize(), freq="D")
         if len(history) < 28:
             return None
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            model = ExponentialSmoothing(history, trend="add", damped_trend=True, seasonal="add",
-                                         seasonal_periods=7).fit()
-            fc = model.forecast(len(horizon))
+        fc = holtwinters.forecast(history.to_numpy(), len(horizon), season=7)
         t = sql["target"]
         base = t["units_per_day_base"]
         predicted = float(np.mean(fc))
