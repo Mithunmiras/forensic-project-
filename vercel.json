@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "cd forensic_ui && npm ci",
+  "installCommand": "test -d forensic_ui || { echo \"ERROR: set the Vercel Root Directory to the repository root (empty). Current dir: $(pwd)\"; ls -la; exit 1; }; cd forensic_ui && npm ci",
   "buildCommand": "cd forensic_ui && npm run build",
   "outputDirectory": "forensic_ui/dist",
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }],
