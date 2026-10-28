@@ -1,0 +1,9 @@
+supplier_id,supplier_name,region_served,avg_lead_time_days,reliability_score,role,product_ids
+SUP_FOXCONN,Foxconn Assembly,All,14,0.91,primary,IPHONE15
+SUP_PEGATRON,Pegatron,All,18,0.87,backup,IPHONE15
+SUP_QUANTA,Quanta Computer,All,21,0.89,primary,MACBOOKAIR
+SUP_COMPAL,Compal Electronics,All,18,0.88,primary,IPADPRO
+SUP_WISTRON,Wistron,All,20,0.84,backup,MACBOOKAIR;IPADPRO
+SUP_LUXSHARE,Luxshare Precision,All,12,0.93,primary,APPLEWATCH;AIRPODSPRO;VISIONPRO
+SUP_GOERTEK,Goertek,All,16,0.85,backup,APPLEWATCH;AIRPODSPRO
+SUP_INVENTEC,Inventec Appliances,All,15,0.9,primary,HOMEPOD

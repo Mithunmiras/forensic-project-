@@ -1,0 +1,12 @@
+Title: Customer Feedback Summary: Vision Pro, West region
+Document type: customer_feedback
+Product: Vision Pro (VISIONPRO)
+Region: West
+Date: 2026-04-20
+Author: Customer Support Analytics
+
+Customer feedback in the West region during April is dominated by complaints about display calibration faults: users report colour drift in one eye after a few days of use.
+
+Store technicians confirm the defect on returned units, and the QC team has opened an investigation into the affected batch.
+
+Overall satisfaction for Vision Pro in the West fell from 4.5 to 3.6 out of 5.

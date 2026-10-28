@@ -1,0 +1,12 @@
+Title: Quality Control Report: Apple Watch heart-rate sensor
+Document type: quality_report
+Product: Apple Watch (APPLEWATCH)
+Region: East
+Date: 2026-04-09
+Author: Quality Engineering
+
+Incoming QC and early field data show a heart-rate sensor failure rate of 1.6% versus a 0.4% baseline in units shipped to the East region since late March.
+
+Affected units give intermittent readings after a firmware sync, and customers are returning them as faulty. The defect has been traced to a single sensor lot (HR-0322).
+
+Recommended action: quarantine remaining stock from lot HR-0322 and expedite replacement modules.

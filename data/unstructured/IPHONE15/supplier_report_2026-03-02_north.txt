@@ -1,0 +1,12 @@
+Title: Supplier Update: iPhone 15 shipments to North region
+Document type: supplier_report
+Product: iPhone 15 (IPHONE15)
+Region: North
+Date: 2026-03-02
+Author: Foxconn Assembly - Account Operations
+
+This note confirms that the component shipment scheduled for dispatch to the North region distribution centre (WH_NORTH_01) on 1 March has been delayed by 12 days due to port congestion at Chennai.
+
+Container vessels are waiting an average of nine days for a berth. Our consolidated shipment of display and camera modules is in the queue, which pushes final assembly and dispatch of iPhone 15 units for North region retailers to the week of 13 March.
+
+Other regions are served from a different consolidation hub and are not affected. Normal shipment cadence will resume once the backlog clears; we will confirm a revised schedule in our next update.

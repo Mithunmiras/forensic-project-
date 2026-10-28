@@ -1,0 +1,10 @@
+Title: Supplier Status: Foxconn Assembly
+Document type: supplier_status
+Product: iPhone 15 (IPHONE15)
+Region: ALL
+Date: 2025-10-01
+Author: Foxconn Assembly - Account Management
+
+Shipments of iPhone 15 to all regional distribution centres are proceeding as planned. Average lead time this period was 14 days, on schedule against contract.
+
+No significant risks to report for the coming quarter.

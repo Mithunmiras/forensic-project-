@@ -2,6 +2,8 @@
 
 **Hybrid SQL-RAG Multi-Agent Decision Intelligence Platform for Retail Analytics** - an M.Tech (Computer Science with Business Analytics) project built on the Global Superstore dataset (51,290 order lines, 2011-2014).
 
+> **New: RetailIQ Forensic.** A multi-agent forensic analytics platform for retail root-cause investigation. It explains *why* sales moved using structured data and documents together, in four layers: descriptive, diagnostic, predictive, prescriptive. Run `./run_forensic.sh` and open http://127.0.0.1:8000. See [docs/FORENSIC.md](docs/FORENSIC.md).
+
 RetailIQ combines three tools behind one web app and REST API, plus a router that decides which to use:
 
 | Tool | What it does | Source of truth |
@@ -17,9 +19,11 @@ Everything shown is computed from the database or the trained model. If a compon
 
 ## One command
 ```powershell
-.un.cmd
+.
+un.cmd
 ```
-Prepares whatever is missing (dependencies, local PostgreSQL, data load, model, knowledge-base index, dashboard build), starts the server on the first free port from 8000, prints the localhost URL and opens it in your browser. Re-running only does the work that is still missing. Ctrl+C stops it. Use `.un.cmd -Port 8765` or `-NoBrowser` if needed. (Uses the project-local PostgreSQL unless `DATABASE_URL` in `.env` points to your own.)
+Prepares whatever is missing (dependencies, local PostgreSQL, data load, model, knowledge-base index, dashboard build), starts the server on the first free port from 8000, prints the localhost URL and opens it in your browser. Re-running only does the work that is still missing. Ctrl+C stops it. Use `.
+un.cmd -Port 8765` or `-NoBrowser` if needed. (Uses the project-local PostgreSQL unless `DATABASE_URL` in `.env` points to your own.)
 
 ## Step-by-step setup (Windows, VS Code, PowerShell)
 Run from the project folder. Requirements: Python 3.11+, Node.js 18+, and a PostgreSQL database (your own, or the project-local one below).

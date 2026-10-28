@@ -1,0 +1,312 @@
+[
+  {
+    "_id": "IPHONE15",
+    "product_name": "iPhone 15",
+    "category": "Smartphones",
+    "launch_date": "2025-09-20",
+    "unit_price": 799.0,
+    "aliases": [
+      "iphone 15",
+      "iphone15",
+      "iphone"
+    ],
+    "suppliers": {
+      "primary": [
+        {
+          "supplier_id": "SUP_FOXCONN",
+          "supplier_name": "Foxconn Assembly",
+          "region_served": "All",
+          "avg_lead_time_days": 14,
+          "reliability_score": 0.91,
+          "role": "primary",
+          "product_ids": [
+            "IPHONE15"
+          ]
+        }
+      ],
+      "backup": [
+        {
+          "supplier_id": "SUP_PEGATRON",
+          "supplier_name": "Pegatron",
+          "region_served": "All",
+          "avg_lead_time_days": 18,
+          "reliability_score": 0.87,
+          "role": "backup",
+          "product_ids": [
+            "IPHONE15"
+          ]
+        }
+      ]
+    },
+    "warehouses": {
+      "North": "WH_NORTH_01",
+      "South": "WH_SOUTH_01",
+      "East": "WH_EAST_01",
+      "West": "WH_WEST_01"
+    }
+  },
+  {
+    "_id": "MACBOOKAIR",
+    "product_name": "MacBook Air",
+    "category": "Laptops",
+    "launch_date": "2025-03-10",
+    "unit_price": 1099.0,
+    "aliases": [
+      "macbook air",
+      "macbookair",
+      "macbook",
+      "mba"
+    ],
+    "suppliers": {
+      "primary": [
+        {
+          "supplier_id": "SUP_QUANTA",
+          "supplier_name": "Quanta Computer",
+          "region_served": "All",
+          "avg_lead_time_days": 21,
+          "reliability_score": 0.89,
+          "role": "primary",
+          "product_ids": [
+            "MACBOOKAIR"
+          ]
+        }
+      ],
+      "backup": [
+        {
+          "supplier_id": "SUP_WISTRON",
+          "supplier_name": "Wistron",
+          "region_served": "All",
+          "avg_lead_time_days": 20,
+          "reliability_score": 0.84,
+          "role": "backup",
+          "product_ids": [
+            "MACBOOKAIR",
+            "IPADPRO"
+          ]
+        }
+      ]
+    },
+    "warehouses": {
+      "North": "WH_NORTH_01",
+      "South": "WH_SOUTH_01",
+      "East": "WH_EAST_01",
+      "West": "WH_WEST_01"
+    }
+  },
+  {
+    "_id": "IPADPRO",
+    "product_name": "iPad Pro",
+    "category": "Tablets",
+    "launch_date": "2025-05-15",
+    "unit_price": 999.0,
+    "aliases": [
+      "ipad pro",
+      "ipadpro",
+      "ipad"
+    ],
+    "suppliers": {
+      "primary": [
+        {
+          "supplier_id": "SUP_COMPAL",
+          "supplier_name": "Compal Electronics",
+          "region_served": "All",
+          "avg_lead_time_days": 18,
+          "reliability_score": 0.88,
+          "role": "primary",
+          "product_ids": [
+            "IPADPRO"
+          ]
+        }
+      ],
+      "backup": [
+        {
+          "supplier_id": "SUP_WISTRON",
+          "supplier_name": "Wistron",
+          "region_served": "All",
+          "avg_lead_time_days": 20,
+          "reliability_score": 0.84,
+          "role": "backup",
+          "product_ids": [
+            "MACBOOKAIR",
+            "IPADPRO"
+          ]
+        }
+      ]
+    },
+    "warehouses": {
+      "North": "WH_NORTH_01",
+      "South": "WH_SOUTH_01",
+      "East": "WH_EAST_01",
+      "West": "WH_WEST_01"
+    }
+  },
+  {
+    "_id": "APPLEWATCH",
+    "product_name": "Apple Watch",
+    "category": "Wearables",
+    "launch_date": "2025-09-20",
+    "unit_price": 399.0,
+    "aliases": [
+      "apple watch",
+      "applewatch",
+      "watch"
+    ],
+    "suppliers": {
+      "primary": [
+        {
+          "supplier_id": "SUP_LUXSHARE",
+          "supplier_name": "Luxshare Precision",
+          "region_served": "All",
+          "avg_lead_time_days": 12,
+          "reliability_score": 0.93,
+          "role": "primary",
+          "product_ids": [
+            "APPLEWATCH",
+            "AIRPODSPRO",
+            "VISIONPRO"
+          ]
+        }
+      ],
+      "backup": [
+        {
+          "supplier_id": "SUP_GOERTEK",
+          "supplier_name": "Goertek",
+          "region_served": "All",
+          "avg_lead_time_days": 16,
+          "reliability_score": 0.85,
+          "role": "backup",
+          "product_ids": [
+            "APPLEWATCH",
+            "AIRPODSPRO"
+          ]
+        }
+      ]
+    },
+    "warehouses": {
+      "North": "WH_NORTH_01",
+      "South": "WH_SOUTH_01",
+      "East": "WH_EAST_01",
+      "West": "WH_WEST_01"
+    }
+  },
+  {
+    "_id": "AIRPODSPRO",
+    "product_name": "AirPods Pro",
+    "category": "Audio",
+    "launch_date": "2025-09-20",
+    "unit_price": 249.0,
+    "aliases": [
+      "airpods pro",
+      "airpodspro",
+      "airpods",
+      "air pods"
+    ],
+    "suppliers": {
+      "primary": [
+        {
+          "supplier_id": "SUP_LUXSHARE",
+          "supplier_name": "Luxshare Precision",
+          "region_served": "All",
+          "avg_lead_time_days": 12,
+          "reliability_score": 0.93,
+          "role": "primary",
+          "product_ids": [
+            "APPLEWATCH",
+            "AIRPODSPRO",
+            "VISIONPRO"
+          ]
+        }
+      ],
+      "backup": [
+        {
+          "supplier_id": "SUP_GOERTEK",
+          "supplier_name": "Goertek",
+          "region_served": "All",
+          "avg_lead_time_days": 16,
+          "reliability_score": 0.85,
+          "role": "backup",
+          "product_ids": [
+            "APPLEWATCH",
+            "AIRPODSPRO"
+          ]
+        }
+      ]
+    },
+    "warehouses": {
+      "North": "WH_NORTH_01",
+      "South": "WH_SOUTH_01",
+      "East": "WH_EAST_01",
+      "West": "WH_WEST_01"
+    }
+  },
+  {
+    "_id": "HOMEPOD",
+    "product_name": "HomePod mini",
+    "category": "Smart Home",
+    "launch_date": "2024-11-01",
+    "unit_price": 99.0,
+    "aliases": [
+      "homepod mini",
+      "homepod",
+      "home pod"
+    ],
+    "suppliers": {
+      "primary": [
+        {
+          "supplier_id": "SUP_INVENTEC",
+          "supplier_name": "Inventec Appliances",
+          "region_served": "All",
+          "avg_lead_time_days": 15,
+          "reliability_score": 0.9,
+          "role": "primary",
+          "product_ids": [
+            "HOMEPOD"
+          ]
+        }
+      ],
+      "backup": []
+    },
+    "warehouses": {
+      "North": "WH_NORTH_01",
+      "South": "WH_SOUTH_01",
+      "East": "WH_EAST_01",
+      "West": "WH_WEST_01"
+    }
+  },
+  {
+    "_id": "VISIONPRO",
+    "product_name": "Vision Pro",
+    "category": "Spatial Computing",
+    "launch_date": "2026-02-02",
+    "unit_price": 3499.0,
+    "aliases": [
+      "vision pro",
+      "visionpro",
+      "vision"
+    ],
+    "suppliers": {
+      "primary": [
+        {
+          "supplier_id": "SUP_LUXSHARE",
+          "supplier_name": "Luxshare Precision",
+          "region_served": "All",
+          "avg_lead_time_days": 12,
+          "reliability_score": 0.93,
+          "role": "primary",
+          "product_ids": [
+            "APPLEWATCH",
+            "AIRPODSPRO",
+            "VISIONPRO"
+          ]
+        }
+      ],
+      "backup": []
+    },
+    "warehouses": {
+      "North": "WH_NORTH_01",
+      "South": "WH_SOUTH_01",
+      "East": "WH_EAST_01",
+      "West": "WH_WEST_01"
+    }
+  }
+]

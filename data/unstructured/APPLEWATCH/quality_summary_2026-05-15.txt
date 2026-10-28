@@ -1,0 +1,10 @@
+Title: Quarterly Quality Summary: Apple Watch
+Document type: quality_summary
+Product: Apple Watch (APPLEWATCH)
+Region: ALL
+Date: 2026-05-15
+Author: Quality Engineering
+
+Incoming inspection and field data for Apple Watch across all regions show a defect rate of 0.2% against the 0.2% baseline, within normal tolerance.
+
+No anomalies were found in the batches reviewed this quarter; no action required.

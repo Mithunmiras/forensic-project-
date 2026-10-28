@@ -1,0 +1,10 @@
+Title: Supplier Status: Quanta Computer
+Document type: supplier_status
+Product: MacBook Air (MACBOOKAIR)
+Region: ALL
+Date: 2025-10-01
+Author: Quanta Computer - Account Management
+
+Shipments of MacBook Air to all regional distribution centres are proceeding as planned. Average lead time this period was 21 days, on schedule against contract.
+
+No significant risks to report for the coming quarter.
