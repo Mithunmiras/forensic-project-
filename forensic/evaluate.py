@@ -24,7 +24,7 @@ def evaluate() -> dict:
     inv = get_investigator()
     rows = []
     for sc in SCENARIOS + CONTROLS:
-        res = inv.investigate(sc["question"])
+        res = inv.investigate(sc["question"], use_llm=False)  # ground-truth scoring stays deterministic
         ans, plan = res["answer"], res["plan"]
         exp = sc["expected"]
         cited = [c["path"] for c in ans["citations"] if c["kind"] == "document"]

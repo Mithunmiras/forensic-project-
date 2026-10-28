@@ -3,3 +3,5 @@
 forensic_ui/node_modules
 forensic_ui/dist
 data/forensic.sqlite
+.env
+.env.*

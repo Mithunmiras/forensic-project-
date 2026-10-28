@@ -25,7 +25,7 @@ class Investigator:
         self._pool = ThreadPoolExecutor(max_workers=2)
 
     def investigate(self, question: str, product_id: Optional[str] = None, region: Optional[str] = None,
-                    month: Optional[str] = None) -> dict:
+                    month: Optional[str] = None, use_llm: bool = True) -> dict:
         trace = []
         t0 = time.perf_counter()
 
@@ -34,11 +34,13 @@ class Investigator:
             result = fn(*args)
             return result, round((time.perf_counter() - start) * 1000, 1)
 
-        plan, ms = timed(self.orchestrator, self.orchestrator.plan, question, product_id, region, month)
+        plan, ms = timed(self.orchestrator, self.orchestrator.plan, question, product_id, region, month, use_llm)
         p = plan.to_dict()
         trace.append({"agent": self.orchestrator.name, "ms": ms,
                       "summary": f"product={p['product_id']}, region={p['region']}, month={p['month']}, "
-                                 f"intent={p['intent']}"})
+                                 f"intent={p['intent']}"
+                                 + ("; LLM filled missing fields" if any("LLM" in v for v in p["resolution"].values())
+                                    else "")})
 
         # SQL and RAG agents are independent, so they fan out in parallel.
         sql_f = self._pool.submit(timed, self.sql, self.sql.run, plan.product_id, plan.region, plan.month)

@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from forensic import llm
 from forensic.agents.rag_agent import classify
 from forensic.catalog import CAUSES, PRODUCTS, REGIONS
 from forensic.config import UI_DIST
@@ -56,6 +57,7 @@ def meta():
         "months": store.months,
         "causes": {k: v["label"] for k, v in CAUSES.items()},
         "examples": examples,
+        "llm": {"enabled": llm.enabled(), "model": llm.model_name() if llm.enabled() else None},
         "stats": {
             "sales_rows": int(len(store.sales)),
             "documents": len(store.documents),
@@ -68,6 +70,19 @@ def meta():
 @app.post("/api/investigate")
 def investigate(req: InvestigateRequest):
     return get_investigator().investigate(req.question, req.product_id or None, req.region or None, req.month or None)
+
+
+@app.post("/api/summary")
+def summary(req: InvestigateRequest):
+    """AI analyst briefing for an investigation. Separate from /api/investigate so the
+    deterministic answer renders immediately and the LLM text arrives after it."""
+    if not llm.enabled():
+        return {"available": False, "reason": "No GROQ_API_KEY configured"}
+    res = get_investigator().investigate(req.question, req.product_id or None, req.region or None, req.month or None)
+    try:
+        return {"available": True, **llm.summarize(req.question, res["answer"])}
+    except llm.LLMUnavailable as e:
+        return {"available": False, "reason": str(e)}
 
 
 @app.get("/api/scan")

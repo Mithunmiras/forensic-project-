@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api, CASE_INFO, Investigation, Meta, monthLabel } from "../api";
+import { api, CASE_INFO, Investigation, Meta, monthLabel, Summary } from "../api";
 import RichText from "../components/RichText";
 import Icon from "../components/Icon";
 import { DailyChart, MonthlyChart, StockChart } from "../components/Charts";
@@ -29,9 +29,11 @@ export default function Investigate({ meta, pending }: { meta: Meta; pending: In
   const [showFilters, setShowFilters] = useState(false);
   const [showExamples, setShowExamples] = useState(wide);
   const [result, setResult] = useState<Investigation | null>(null);
+  const [summary, setSummary] = useState<Summary | "loading" | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
+  const runId = useRef(0);
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setShowExamples(wide), [wide]);
@@ -39,15 +41,27 @@ export default function Investigate({ meta, pending }: { meta: Meta; pending: In
   const run = (req: InvestigateRequest, scroll = false) => {
     setLoading(true);
     setError(null);
+    const body = {
+      question: req.question,
+      product_id: req.product_id || undefined,
+      region: req.region || undefined,
+      month: req.month || undefined,
+    };
+    const id = ++runId.current;
     api
-      .investigate({
-        question: req.question,
-        product_id: req.product_id || undefined,
-        region: req.region || undefined,
-        month: req.month || undefined,
-      })
+      .investigate(body)
       .then((r) => {
+        if (id !== runId.current) return;
         setResult(r);
+        setSummary(null);
+        if (meta.llm.enabled) {
+          setSummary("loading");
+          // Ask with the resolved plan so the briefing describes exactly this investigation.
+          api.summary({ question: r.question, product_id: r.plan.product_id ?? undefined,
+            region: r.plan.region ?? undefined, month: r.plan.month ?? undefined })
+            .then((s) => id === runId.current && setSummary(s))
+            .catch((e) => id === runId.current && setSummary({ available: false, reason: String(e) }));
+        }
         if (scroll && !wide) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       })
       .catch((e) => setError(String(e)))
@@ -178,7 +192,7 @@ export default function Investigate({ meta, pending }: { meta: Meta; pending: In
       <section className="stack" ref={resultRef} style={{ scrollMarginTop: 76 }}>
         {error && <div className="card"><b>Request failed:</b> {error}</div>}
         {loading && !result && <Skeleton />}
-        {result && <Result key={result.question + result.total_ms} inv={result} loading={loading} />}
+        {result && <Result key={result.question + result.total_ms} inv={result} loading={loading} summary={summary} />}
       </section>
     </div>
   );
@@ -222,7 +236,48 @@ const LAYERS: { key: keyof Investigation["answer"]["layers"]; tag: string; title
 
 type EvTab = "charts" | "documents" | "checks" | "sources" | "trace";
 
-function Result({ inv, loading }: { inv: Investigation; loading: boolean }) {
+function AISummary({ s, citations, onCite, active }: {
+  s: Summary | "loading"; citations: Investigation["answer"]["citations"]; onCite: (id: number) => void; active: number | null;
+}) {
+  return (
+    <div className="card ai-card fade-in">
+      <div className="row" style={{ marginBottom: 8 }}>
+        <span className="layer-icon ai-icon"><Icon name="spark" size={17} /></span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="tag">AI analyst briefing</div>
+          <div className="small muted">
+            {s === "loading" ? "Writing from the agents' evidence…" : s.available ? `${s.model} · ${s.ms} ms` : "Unavailable"}
+          </div>
+        </div>
+        {s !== "loading" && s.available && (
+          <span className={`badge ${s.grounded ? "good" : "bad"}`}
+            title="Every number and citation in the briefing must appear in the agents' evidence">
+            {s.grounded ? "✓ grounded in evidence" : "✗ failed grounding check"}
+          </span>
+        )}
+      </div>
+      {s === "loading" && (
+        <div className="stack" style={{ gap: 8 }}>
+          <div className="skeleton" style={{ height: 14 }} />
+          <div className="skeleton" style={{ height: 14, width: "92%" }} />
+          <div className="skeleton" style={{ height: 14, width: "70%" }} />
+        </div>
+      )}
+      {s !== "loading" && s.available && s.grounded && (
+        <p style={{ margin: 0 }}><RichText text={s.text ?? ""} active={active} onCite={onCite} citations={citations} /></p>
+      )}
+      {s !== "loading" && s.available && !s.grounded && (
+        <p className="small" style={{ margin: 0 }}>
+          The briefing was withheld because it stated things that are not in the evidence: {s.problems?.join("; ")}.
+          The four layers below are unaffected.
+        </p>
+      )}
+      {s !== "loading" && !s.available && <p className="small muted" style={{ margin: 0 }}>{s.reason}</p>}
+    </div>
+  );
+}
+
+function Result({ inv, loading, summary }: { inv: Investigation; loading: boolean; summary: Summary | "loading" | null }) {
   const [cite, setCite] = useState<number | null>(null);
   const [showReasons, setShowReasons] = useState(false);
   const a = inv.answer;
@@ -280,10 +335,12 @@ function Result({ inv, loading }: { inv: Investigation; loading: boolean }) {
             <div className="row small">
               {(["product", "region", "month"] as const).map((k) => {
                 const value = k === "product" ? inv.plan.product_name : k === "region" ? inv.plan.region : monthLabel(inv.plan.month);
-                const scanned = inv.plan.resolution[k]?.startsWith("not in");
+                const how = inv.plan.resolution[k] ?? "";
+                const scanned = how.startsWith("not in");
+                const byLlm = how.startsWith("inferred by the LLM");
                 return (
-                  <span key={k} className={`badge ${scanned ? "info" : ""}`} title={inv.plan.resolution[k] ?? "not determined"}>
-                    {value ?? `no ${k}`}{scanned ? " · scanned" : ""}
+                  <span key={k} className={`badge ${scanned || byLlm ? "info" : ""}`} title={how || "not determined"}>
+                    {value ?? `no ${k}`}{scanned ? " · scanned" : byLlm ? " · AI" : ""}
                   </span>
                 );
               })}
@@ -310,6 +367,8 @@ function Result({ inv, loading }: { inv: Investigation; loading: boolean }) {
         )}
         {inv.plan.notes.map((n, i) => <div key={i} className="small muted">{n}</div>)}
       </div>
+
+      {summary && <AISummary s={summary} citations={a.citations} onCite={onCite} active={cite} />}
 
       <div className="layers">
         {LAYERS.map((l) => (
