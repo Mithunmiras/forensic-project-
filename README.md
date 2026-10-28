@@ -38,12 +38,21 @@ Other commands:
 
 UI development with hot reload: run `serve` in one terminal and `cd forensic_ui && npm run dev` in another. The UI is then at http://localhost:5173 and proxies `/api` to port 8000.
 
+## Optional LLM (Groq)
+
+Set `GROQ_API_KEY` to turn on two LLM features. Locally, put it in a `.env` file in the project root; git ignores that file. On Vercel, add it under **Settings → Environment Variables**. `GROQ_MODEL` is optional and defaults to `openai/gpt-oss-120b`.
+
+* **Entity extraction fallback (orchestrator).** When the rules cannot find the product, region or month, the LLM is asked for them. Only allowed values are accepted. For example, "how did the watch do up north around Christmas?" resolves to Apple Watch, North, 2025-12.
+* **AI analyst briefing (synthesis).** A 4–6 sentence executive summary written only from the agents' evidence. A grounding check rejects it unless every number and citation in it appears in that evidence. The check verifies numbers and citations, not the meaning of each sentence, so the deterministic four layers remain the source of truth.
+
+The LLM never decides a root cause, a number or the confidence. The evaluation always runs without it, so the results stay reproducible. Without a key, everything else works unchanged.
+
 ## Deploy to Vercel
 
 The repo is ready for Vercel as is. `vercel.json` builds the React dashboard as static files, and `api/index.py` serves the FastAPI backend as a Python serverless function for every `/api/*` route.
 
 1. Go to https://vercel.com/new and import this GitHub repository.
-2. Leave all settings at their defaults (they come from `vercel.json`) and click **Deploy**.
+2. Leave all settings at their defaults (they come from `vercel.json`). Set **Application Preset** to **Other** and keep **Root Directory** as `./`. Optionally add `GROQ_API_KEY` under Environment Variables. Then click **Deploy**.
 
 Or deploy from the terminal with `npx vercel` (first time) and `npx vercel --prod`.
 
@@ -107,7 +116,7 @@ Cause types: supplier delay, logistics disruption, quality issue, return-policy 
 | Correct confidence label | 24/24 |
 | Correct product/region/month extracted | 24/24 |
 
-Across the whole grid (6 products × 4 regions × 9 months = 216 cells), the 16 injected anomalies are flagged and none of the 200 normal cells is. `tests/` (14 tests) checks all of this.
+Across the whole grid (6 products × 4 regions × 9 months = 216 cells), the 16 injected anomalies are flagged and none of the 200 normal cells is. `tests/` (19 tests) checks all of this.
 
 ## Honest limitations
 

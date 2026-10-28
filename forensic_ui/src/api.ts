@@ -112,7 +112,18 @@ export interface Meta {
   months: string[];
   causes: Record<string, string>;
   examples: { id: string; question: string; case: string }[];
+  llm: { enabled: boolean; model: string | null };
   stats: { sales_rows: number; documents: number; incident_documents: number; scenarios: number; controls: number };
+}
+
+export interface Summary {
+  available: boolean;
+  reason?: string;
+  text?: string;
+  model?: string;
+  grounded?: boolean;
+  problems?: string[];
+  ms?: number;
 }
 
 export interface ScanCell {
@@ -181,6 +192,12 @@ export const api = {
   documents: () => request<{ documents: LibraryDoc[] }>("/api/documents"),
   document: (path: string) => request<{ path: string; title: string; text: string }>(`/api/documents/${path}`),
   evaluation: (refresh = false) => request<Evaluation>(`/api/evaluation${refresh ? "?refresh=true" : ""}`),
+  summary: (body: { question: string; product_id?: string; region?: string; month?: string }) =>
+    request<Summary>("/api/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
   investigate: (body: { question: string; product_id?: string; region?: string; month?: string }) =>
     request<Investigation>("/api/investigate", {
       method: "POST",

@@ -288,6 +288,12 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; 
 }
 .cite:hover, .cite.on { background: var(--accent); color: #fff; }
 
+/* ---------- AI briefing ---------- */
+.ai-card { border-color: color-mix(in srgb, #8b5cf6 40%, var(--border));
+  background: linear-gradient(135deg, color-mix(in srgb, #8b5cf6 7%, var(--surface)), var(--surface) 60%); }
+.ai-card .tag { font-size: 10.5px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.ai-icon { --layer-color: #8b5cf6; }
+
 /* ---------- tabs ---------- */
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px -20px 16px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }

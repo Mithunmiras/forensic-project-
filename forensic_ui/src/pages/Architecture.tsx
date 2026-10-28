@@ -66,13 +66,14 @@ export default function Architecture({ meta }: { meta: Meta }) {
           </ul>
         </div>
         <div className="card">
-          <h2>Why every step is deterministic</h2>
+          <h2>Where the LLM is used, and where it is not</h2>
           <p style={{ marginTop: 0 }}>
-            Numbers come from SQL, never from a language model. Causes come from the documents' own wording, checked
-            against the structured signature. A document only counts as an explanation if its cause is compatible with
-            what the numbers show; for example, a stock-out is compatible with a supplier delay or a logistics
-            disruption, but not with a discount. The result is reproducible and auditable, and it is scored against
-            ground truth on the Evaluation page.
+            Numbers come from SQL and root causes come from the documents' own wording, checked against the structured
+            signature. Both are deterministic, reproducible and scored on the Evaluation page. The LLM
+            ({meta.llm.enabled ? meta.llm.model : "Groq, when GROQ_API_KEY is set"}) does two constrained jobs. It fills
+            in product, region or month when the rules cannot parse them, and only allowed values are accepted. It also
+            writes the AI analyst briefing from the agents' evidence, which is shown only if every number and citation
+            in it appears in that evidence (the grounding check).
           </p>
         </div>
       </div>

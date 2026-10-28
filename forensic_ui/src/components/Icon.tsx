@@ -20,6 +20,7 @@ const PATHS: Record<string, string> = {
   close: "M6 6l12 12M18 6L6 18",
   refresh: "M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7",
   filter: "M4 5h16l-6 8v6l-4-2v-4z",
+  spark: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z",
 };
 
 export default function Icon({ name, size = 18 }: { name: keyof typeof PATHS | string; size?: number }) {

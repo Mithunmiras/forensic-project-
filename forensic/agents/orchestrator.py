@@ -1,9 +1,10 @@
 """Orchestrator agent: question -> investigation plan (product, region, month, intent).
 
-Entity extraction is deterministic (aliases, region names, month expressions), so the plan is
-reproducible and explainable. Anything the question leaves open is resolved by scanning the
-monthly metrics for the most anomalous matching product / region / month, and the plan
-records how every field was decided.
+Entity extraction is rule-based first (aliases, region names, month expressions), so the plan
+is reproducible and explainable. If the rules leave a field open and an LLM is configured, the
+LLM is asked for it (restricted to allowed values, e.g. "around Christmas" -> December).
+Anything still open is resolved by scanning the monthly metrics for the most anomalous
+matching product / region / month. The plan records how every field was decided.
 """
 from __future__ import annotations
 
@@ -11,7 +12,8 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import List, Optional
 
-from forensic.catalog import PRODUCTS
+from forensic import llm
+from forensic.catalog import PRODUCTS, REGIONS
 from forensic.metrics import monthly_metrics
 from forensic.store import DataStore
 
@@ -89,7 +91,7 @@ class Orchestrator:
         self.store = store
 
     def plan(self, question: str, product_id: Optional[str] = None, region: Optional[str] = None,
-             month: Optional[str] = None) -> Plan:
+             month: Optional[str] = None, use_llm: bool = True) -> Plan:
         q = question.strip()
         resolution, notes = {}, []
 
@@ -128,9 +130,29 @@ class Orchestrator:
         plan = Plan(question=q, product_id=product["product_id"] if product else None,
                     product_name=product["product_name"] if product else None, region=region, month=month,
                     intent=_intent(q), direction=direction, resolution=resolution, notes=notes)
+        if use_llm and llm.enabled() and not (plan.product_id and plan.region and plan.month):
+            self._fill_by_llm(plan)
         if not (plan.product_id and plan.region and plan.month):
             self._fill_by_scan(plan)
         return plan
+
+    def _fill_by_llm(self, plan: Plan) -> None:
+        try:
+            found = llm.extract_entities(plan.question, PRODUCTS, REGIONS, self.store.months)
+        except llm.LLMUnavailable as e:
+            plan.notes.append(f"LLM entity extraction unavailable ({e}); used rules and scanning only.")
+            return
+        how = f"inferred by the LLM ({llm.model_name()}) and validated against allowed values"
+        if not plan.product_id and found["product_id"]:
+            plan.product_id = found["product_id"]
+            plan.product_name = next(p["product_name"] for p in PRODUCTS if p["product_id"] == plan.product_id)
+            plan.resolution["product"] = how
+        if not plan.region and found["region"]:
+            plan.region = found["region"]
+            plan.resolution["region"] = how
+        if not plan.month and found["month"]:
+            plan.month = found["month"]
+            plan.resolution["month"] = how
 
     def _fill_by_scan(self, plan: Plan) -> None:
         """Pick the most anomalous product/region/month that matches whatever the question fixed."""
