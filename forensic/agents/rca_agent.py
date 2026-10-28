@@ -34,12 +34,16 @@ class ForecastRCAAgent:
             out["reason"] = "Needs structured data, which is unavailable: " + (sql.get("reason") or "")
             return out
         t = sql["target"]
+        ds = sql["dataset"]
         families = [f for f in FAMILY_ORDER if f in t["signals"]]
         primary = families[0] if families else None
         hypothesis = STRUCTURED_HYPOTHESES[primary] if primary else None
+        if primary == "supply" and not ds["has_inventory"]:
+            hypothesis = ("delivery_delays", "Delivery delays (late-delivery spike)")
 
         others = sql["other_regions"]
-        others_moved = [o for o in others if abs(o["units_per_day_pct"]) >= 5]
+        moved = ds.get("units_pct_threshold") or 5
+        others_moved = [o for o in others if abs(o["units_per_day_pct"]) >= moved]
         if not others:
             scope = "unknown"
         elif not others_moved:
@@ -67,20 +71,31 @@ class ForecastRCAAgent:
     @staticmethod
     def _checks(sql: dict) -> list:
         """Each structured test, pass/fail, so the synthesis can say what was ruled out."""
-        t = sql["target"]
-        return [
-            {"key": "supply", "fired": t["stockout_days"] >= 3,
-             "detail": f"{int(t['stockout_days'])} stock-out day(s) at {sql['stockout']['warehouse']}"},
+        t, ds = sql["target"], sql["dataset"]
+        if ds["has_inventory"]:
+            supply = {"key": "supply", "fired": "supply" in t["signals"],
+                      "detail": f"{int(t['stockout_days'])} stock-out day(s) at {sql['stockout']['warehouse']}"}
+        else:
+            supply = {"key": "supply", "fired": "supply" in t["signals"],
+                      "detail": f"late-delivery rate {t['late_rate']:.1f}% vs. {t['late_rate_base']:.1f}% baseline, "
+                                f"z = {t['late_rate_z']:.1f}"}
+        checks = [
+            supply,
             {"key": "returns", "fired": "returns" in t["signals"],
-             "detail": f"returns rate {t['returns_rate']:.2f}% vs. {t['returns_rate_base']:.2f}% baseline, "
+             "detail": f"{ds['returns_label']} {t['returns_rate']:.2f}% vs. {t['returns_rate_base']:.2f}% baseline, "
                        f"z = {t['returns_rate_z']:.1f}"},
-            {"key": "discount", "fired": "discount" in t["signals"],
-             "detail": f"average discount {t['avg_discount']:.1f}% vs. {t['avg_discount_base']:.1f}% baseline"},
-            {"key": "price", "fired": "price" in t["signals"],
-             "detail": f"realised list price {t['price_index_pct']:+.1f}% vs. baseline"},
-            {"key": "demand", "fired": any(f in t["signals"] for f in ("demand_down", "demand_up")),
-             "detail": f"units/day {t['units_per_day_pct']:+.1f}% vs. baseline, z = {t['units_per_day_z']:.1f}"},
         ]
+        if ds["has_discount"]:
+            checks.append({"key": "discount", "fired": "discount" in t["signals"],
+                           "detail": f"average discount {t['avg_discount']:.1f}% vs. {t['avg_discount_base']:.1f}% "
+                                     "baseline"})
+        if ds["has_price"]:
+            checks.append({"key": "price", "fired": "price" in t["signals"],
+                           "detail": f"realised list price {t['price_index_pct']:+.1f}% vs. baseline"})
+        checks.append({"key": "demand", "fired": any(f in t["signals"] for f in ("demand_down", "demand_up")),
+                       "detail": f"units/day {t['units_per_day_pct']:+.1f}% vs. baseline, "
+                                 f"z = {t['units_per_day_z']:.1f}"})
+        return checks
 
     @staticmethod
     def _forecast(sql: dict) -> Optional[dict]:

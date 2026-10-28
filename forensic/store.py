@@ -9,7 +9,7 @@ from functools import lru_cache
 
 import pandas as pd
 
-from forensic.config import CATALOG_PATH, STRUCTURED_DIR, UNSTRUCTURED_DIR
+from forensic.datasets import Dataset, get_dataset
 from forensic.generate import ensure_data
 
 
@@ -31,23 +31,29 @@ class Document:
 
 
 class DataStore:
-    def __init__(self) -> None:
-        ensure_data()
+    def __init__(self, dataset: Dataset) -> None:
+        self.dataset = dataset
+        if dataset.key == "synthetic":
+            ensure_data()
+        elif not dataset.is_available():
+            raise FileNotFoundError(f"Dataset {dataset.key!r} has not been imported (see README).")
         self._con = self._load_sql()
         self._lock = threading.Lock()
-        self.catalog = {d["_id"]: d for d in json.loads(CATALOG_PATH.read_text(encoding="utf-8"))}
+        self.catalog = {d["_id"]: d for d in json.loads(dataset.catalog_path.read_text(encoding="utf-8"))}
+        self.products = [{"product_id": pid, "product_name": d["product_name"], "aliases": d.get("aliases", [])}
+                         for pid, d in self.catalog.items()]
         self.documents = self._load_documents()
         self.sales = self.query("SELECT * FROM sales")
         self.months = sorted(self.sales["date"].str[:7].unique().tolist())
 
-    @staticmethod
-    def _load_sql() -> sqlite3.Connection:
+    def _load_sql(self) -> sqlite3.Connection:
         """In-memory SQLite built from the CSVs: nothing is written to disk (serverless-safe)."""
         con = sqlite3.connect(":memory:", check_same_thread=False)
-        for name in ("products", "sales", "inventory", "suppliers"):
-            pd.read_csv(STRUCTURED_DIR / f"{name}.csv").to_sql(name, con, index=False)
+        for csv in sorted(self.dataset.structured_dir.glob("*.csv")):
+            pd.read_csv(csv).to_sql(csv.stem, con, index=False)
         con.execute("CREATE INDEX ix_sales ON sales(product_id, region, date)")
-        con.execute("CREATE INDEX ix_inventory ON inventory(product_id, warehouse, date)")
+        if self.dataset.has_inventory:
+            con.execute("CREATE INDEX ix_inventory ON inventory(product_id, warehouse, date)")
         con.execute("PRAGMA query_only = ON")
         return con
 
@@ -57,7 +63,7 @@ class DataStore:
 
     def _load_documents(self) -> list:
         docs = []
-        for txt in sorted(UNSTRUCTURED_DIR.glob("*/*.txt")):
+        for txt in sorted(self.dataset.unstructured_dir.glob("*/*.txt")):
             sidecar = txt.with_suffix(".json")
             meta = json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.exists() else {}
             raw = txt.read_text(encoding="utf-8")
@@ -77,6 +83,6 @@ class DataStore:
         return any(d.product_id == product_id for d in self.documents)
 
 
-@lru_cache(maxsize=1)
-def get_store() -> DataStore:
-    return DataStore()
+@lru_cache(maxsize=4)
+def get_store(dataset: str = "synthetic") -> DataStore:
+    return DataStore(get_dataset(dataset))

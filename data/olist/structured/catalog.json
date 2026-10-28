@@ -1,0 +1,145 @@
+[
+  {
+    "_id": "BED_BATH_TABLE",
+    "product_name": "Bed, bath & table",
+    "category": "bed_bath_table",
+    "launch_date": "2017-03-01",
+    "unit_price": 79.0,
+    "aliases": [
+      "bed bath",
+      "bed",
+      "bath",
+      "bedding",
+      "towels"
+    ],
+    "suppliers": {
+      "primary": [],
+      "backup": []
+    },
+    "warehouses": {}
+  },
+  {
+    "_id": "HEALTH_BEAUTY",
+    "product_name": "Health & beauty",
+    "category": "health_beauty",
+    "launch_date": "2017-03-01",
+    "unit_price": 79.9,
+    "aliases": [
+      "health and beauty",
+      "health",
+      "beauty",
+      "cosmetics"
+    ],
+    "suppliers": {
+      "primary": [],
+      "backup": []
+    },
+    "warehouses": {}
+  },
+  {
+    "_id": "SPORTS_LEISURE",
+    "product_name": "Sports & leisure",
+    "category": "sports_leisure",
+    "launch_date": "2017-03-01",
+    "unit_price": 78.97,
+    "aliases": [
+      "sports and leisure",
+      "sports",
+      "sport",
+      "leisure"
+    ],
+    "suppliers": {
+      "primary": [],
+      "backup": []
+    },
+    "warehouses": {}
+  },
+  {
+    "_id": "FURNITURE_DECOR",
+    "product_name": "Furniture & decor",
+    "category": "furniture_decor",
+    "launch_date": "2017-03-01",
+    "unit_price": 67.0,
+    "aliases": [
+      "furniture and decor",
+      "furniture",
+      "decor"
+    ],
+    "suppliers": {
+      "primary": [],
+      "backup": []
+    },
+    "warehouses": {}
+  },
+  {
+    "_id": "COMPUTERS_ACCESSORIES",
+    "product_name": "Computer accessories",
+    "category": "computers_accessories",
+    "launch_date": "2017-03-01",
+    "unit_price": 82.0,
+    "aliases": [
+      "computer accessories",
+      "computers",
+      "computer",
+      "pc"
+    ],
+    "suppliers": {
+      "primary": [],
+      "backup": []
+    },
+    "warehouses": {}
+  },
+  {
+    "_id": "HOUSEWARES",
+    "product_name": "Housewares",
+    "category": "housewares",
+    "launch_date": "2017-03-01",
+    "unit_price": 59.9,
+    "aliases": [
+      "housewares",
+      "household",
+      "kitchen"
+    ],
+    "suppliers": {
+      "primary": [],
+      "backup": []
+    },
+    "warehouses": {}
+  },
+  {
+    "_id": "WATCHES_GIFTS",
+    "product_name": "Watches & gifts",
+    "category": "watches_gifts",
+    "launch_date": "2017-03-01",
+    "unit_price": 129.0,
+    "aliases": [
+      "watches and gifts",
+      "watches",
+      "watch",
+      "gifts"
+    ],
+    "suppliers": {
+      "primary": [],
+      "backup": []
+    },
+    "warehouses": {}
+  },
+  {
+    "_id": "TELEPHONY",
+    "product_name": "Telephony",
+    "category": "telephony",
+    "launch_date": "2017-03-01",
+    "unit_price": 29.99,
+    "aliases": [
+      "telephony",
+      "phones",
+      "phone",
+      "mobile"
+    ],
+    "suppliers": {
+      "primary": [],
+      "backup": []
+    },
+    "warehouses": {}
+  }
+]

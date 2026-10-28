@@ -22,7 +22,6 @@ from typing import Optional
 import numpy as np
 
 from forensic.catalog import CAUSES
-from forensic.config import DOC_LOOKBACK_DAYS
 from forensic.store import DataStore, Document
 from forensic.textindex import TfidfIndex
 
@@ -30,8 +29,10 @@ CAUSE_LEXICON = {
     "supplier_delay": ["shipment", "delayed", "delay", "port congestion", "component shortage", "shortage",
                        "backlog", "sub-supplier"],
     "logistics_disruption": ["strike", "trucking", "flood", "warehouse is closed", "road transport",
-                             "inbound transport", "carrier", "deliveries"],
-    "quality_issue": ["defect", "faulty", "fault", "failure rate", "qc", "quality control", "recall", "quarantine"],
+                             "inbound transport", "carrier", "deliveries", "late deliveries", "delivery delay",
+                             "not received"],
+    "quality_issue": ["defect", "faulty", "fault", "failure rate", "qc", "quality control", "recall", "quarantine",
+                      "damaged item", "wrong item"],
     "promotion": ["discount", "promotion", "promotional", "markdown", "clearance", "black friday"],
     "competitor_launch": ["competitor", "rival", "launched", "switching", "market share"],
     "marketing_campaign": ["campaign", "holiday", "gifting", "advertising", "demand surge"],
@@ -39,14 +40,14 @@ CAUSE_LEXICON = {
     "return_policy_change": ["return window", "extended from", "full refund", "no questions asked"],
 }
 ROUTINE_PHRASES = ["within normal", "no anomalies", "no action required", "no significant", "proceeding as planned",
-                   "on schedule", "remained stable"]
+                   "on schedule", "remained stable", "in line with"]
 REFERENCE_TYPES = {"policy"}
 # Which routine document types can rule out which cause families.
 ROUTINE_RULES_OUT = {"quality_summary": "quality_issue", "supplier_status": "supplier_delay",
                      "customer_feedback": "competitor_launch"}
 
 QUERY_EXPANSION = ("shipment delay shortage stock strike transport defect faulty returns discount promotion "
-                   "competitor launched price increase campaign return window")
+                   "competitor launched price increase campaign return window late deliveries not received")
 
 
 def _hits(text: str, terms) -> list:
@@ -68,10 +69,10 @@ def classify(doc: Document) -> dict:
     return {"role": "routine", "cause": None, "matched_terms": scores[best], "routine_phrases": routine}
 
 
-def _month_window(month: str):
+def _month_window(month: str, lookback_days: int):
     start = date.fromisoformat(f"{month}-01")
     nxt = date(start.year + (start.month == 12), start.month % 12 + 1, 1)
-    return start - timedelta(days=DOC_LOOKBACK_DAYS), nxt - timedelta(days=1), start
+    return start - timedelta(days=lookback_days), nxt - timedelta(days=1), start
 
 
 def best_sentence(text: str, cause: Optional[str]) -> str:
@@ -112,7 +113,8 @@ class RAGAgent:
         out["available"] = True
 
         sims = self._similarity(f"{question} {QUERY_EXPANSION}")
-        window = _month_window(month) if month and not month.startswith("?") else None
+        window = (_month_window(month, self.store.dataset.doc_lookback_days)
+                  if month and not month.startswith("?") else None)
         if window:
             out["window"] = {"from": window[0].isoformat(), "to": window[1].isoformat()}
         per_doc, excluded = {}, {}

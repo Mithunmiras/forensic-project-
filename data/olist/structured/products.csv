@@ -1,0 +1,9 @@
+product_id,product_name,category,launch_date,unit_price,supplier_id
+BED_BATH_TABLE,"Bed, bath & table",bed_bath_table,2017-03-01,79.0,
+HEALTH_BEAUTY,Health & beauty,health_beauty,2017-03-01,79.9,
+SPORTS_LEISURE,Sports & leisure,sports_leisure,2017-03-01,78.97,
+FURNITURE_DECOR,Furniture & decor,furniture_decor,2017-03-01,67.0,
+COMPUTERS_ACCESSORIES,Computer accessories,computers_accessories,2017-03-01,82.0,
+HOUSEWARES,Housewares,housewares,2017-03-01,59.9,
+WATCHES_GIFTS,Watches & gifts,watches_gifts,2017-03-01,129.0,
+TELEPHONY,Telephony,telephony,2017-03-01,29.99,

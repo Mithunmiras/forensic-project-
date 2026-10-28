@@ -13,7 +13,6 @@ from dataclasses import asdict, dataclass, field
 from typing import List, Optional
 
 from forensic import llm
-from forensic.catalog import PRODUCTS, REGIONS
 from forensic.metrics import monthly_metrics
 from forensic.store import DataStore
 
@@ -24,7 +23,6 @@ _MONTH_NAME = "|".join(sorted(MONTHS, key=len, reverse=True))
 _MONTH_RE = re.compile(rf"\b({_MONTH_NAME})\b\.?(?:\s*,?\s*(20\d\d))?", re.I)
 _ISO_MONTH_RE = re.compile(r"\b(20\d\d)-(0[1-9]|1[0-2])\b")
 _MAY_AS_MONTH = re.compile(r"(\b(in|during|for|of|since|until|by)\s+may\b|\bmay\s*,?\s*20\d\d\b)", re.I)
-_REGION_RE = re.compile(r"\b(north|south|east|west)(ern)?\b", re.I)
 
 INTENT_PATTERNS = {
     "predictive": re.compile(r"\b(forecast|predict\w*|next month|will|outlook|expect\w*|going forward)\b", re.I),
@@ -52,10 +50,10 @@ class Plan:
         return asdict(self)
 
 
-def _extract_product(q: str) -> Optional[dict]:
+def _extract_product(q: str, products: list) -> Optional[dict]:
     ql = q.lower()
     best = None
-    for p in PRODUCTS:
+    for p in products:
         for alias in p["aliases"] + [p["product_id"].lower()]:
             if re.search(rf"\b{re.escape(alias)}\b", ql) and (best is None or len(alias) > best[1]):
                 best = (p, len(alias))
@@ -97,19 +95,18 @@ class Orchestrator:
 
         product = None
         if product_id:
-            product = next((p for p in PRODUCTS if p["product_id"] == product_id), None)
+            product = next((p for p in self.store.products if p["product_id"] == product_id), None)
             resolution["product"] = "selected in the filters"
         else:
-            product = _extract_product(q)
+            product = _extract_product(q, self.store.products)
             if product:
                 resolution["product"] = "extracted from the question"
 
         if region:
             resolution["region"] = "selected in the filters"
         else:
-            m = _REGION_RE.search(q)
-            if m:
-                region = m.group(1).capitalize()
+            region = next((name for rx, name in self.store.dataset.region_patterns if re.search(rx, q, re.I)), None)
+            if region:
                 resolution["region"] = "extracted from the question"
 
         if month:
@@ -138,14 +135,15 @@ class Orchestrator:
 
     def _fill_by_llm(self, plan: Plan) -> None:
         try:
-            found = llm.extract_entities(plan.question, PRODUCTS, REGIONS, self.store.months)
+            found = llm.extract_entities(plan.question, self.store.products, list(self.store.dataset.regions),
+                                         self.store.months)
         except llm.LLMUnavailable as e:
             plan.notes.append(f"LLM entity extraction unavailable ({e}); used rules and scanning only.")
             return
         how = f"inferred by the LLM ({llm.model_name()}) and validated against allowed values"
         if not plan.product_id and found["product_id"]:
             plan.product_id = found["product_id"]
-            plan.product_name = next(p["product_name"] for p in PRODUCTS if p["product_id"] == plan.product_id)
+            plan.product_name = next(p["product_name"] for p in self.store.products if p["product_id"] == plan.product_id)
             plan.resolution["product"] = how
         if not plan.region and found["region"]:
             plan.region = found["region"]
@@ -194,7 +192,7 @@ class Orchestrator:
             value = best[col]
             if key == "product":
                 plan.product_id = value
-                plan.product_name = next(p["product_name"] for p in PRODUCTS if p["product_id"] == value)
+                plan.product_name = next(p["product_name"] for p in self.store.products if p["product_id"] == value)
             else:
                 setattr(plan, key, value)
             plan.resolution[key] = (f"not in the question - scanned {scope} product/region/month combinations "

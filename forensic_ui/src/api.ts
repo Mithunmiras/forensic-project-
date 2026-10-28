@@ -76,7 +76,10 @@ export interface Investigation {
       month?: string;
       queries: { purpose: string; sql: string; params?: unknown[] }[];
       target?: Record<string, number | boolean | string[]>;
-      monthly?: { month: string; units_per_day: number; baseline: number; stockout_days: number; is_anomaly: boolean }[];
+      monthly?: {
+        month: string; units_per_day: number; baseline: number; stockout_days: number; is_anomaly: boolean;
+        late_rate?: number; late_rate_base?: number;
+      }[];
       other_regions?: { region: string; units_per_day_pct: number; is_anomaly: boolean }[];
       stockout?: { warehouse: string; days: number; first: string | null; last: string | null };
       daily?: { date: string; units: number; returns: number; discount: number; stock: number; reorder_point: number }[];
@@ -111,8 +114,10 @@ export interface Meta {
   regions: string[];
   months: string[];
   causes: Record<string, string>;
-  examples: { id: string; question: string; case: string }[];
+  examples: { id: string; question: string; case: string; product_id?: string; region?: string; month?: string }[];
   llm: { enabled: boolean; model: string | null };
+  dataset: DatasetInfo;
+  datasets: DatasetInfo[];
   stats: { sales_rows: number; documents: number; incident_documents: number; scenarios: number; controls: number };
 }
 
@@ -134,9 +139,26 @@ export interface ScanCell {
   units_pct: number;
   returns_pct: number;
   stockout_days: number;
+  late_rate: number | null;
   anomaly_score: number;
   is_anomaly: boolean;
   signals: string[];
+}
+
+export interface DatasetInfo {
+  key: string;
+  title: string;
+  description: string;
+  regions: string[];
+  has_inventory: boolean;
+  has_discount: boolean;
+  has_price: boolean;
+  has_ground_truth: boolean;
+  currency: string;
+  returns_label: string;
+  baseline_window: number | null;
+  source: string;
+  available: boolean;
 }
 
 export interface LibraryDoc {
@@ -176,12 +198,26 @@ export interface EvalRow {
 }
 
 export interface Evaluation {
+  available: boolean;
+  reason?: string;
   summary: Record<string, { correct: number; total: number }>;
   rows: EvalRow[];
 }
 
+// The active dataset travels with every request (query string for GET, body field for POST).
+let currentDataset = "synthetic";
+export const setDataset = (key: string) => {
+  currentDataset = key;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init);
+  let url = path;
+  if (init?.method === "POST" && typeof init.body === "string") {
+    init = { ...init, body: JSON.stringify({ ...JSON.parse(init.body), dataset: currentDataset }) };
+  } else {
+    url += `${path.includes("?") ? "&" : "?"}dataset=${encodeURIComponent(currentDataset)}`;
+  }
+  const res = await fetch(url, init);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json() as Promise<T>;
 }

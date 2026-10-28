@@ -42,7 +42,17 @@ export default function EvaluationPage({ onInvestigate }: { onInvestigate: (r: I
           {loading ? "Running…" : "Re-run"}
         </button>
       </div>
-      {!data ? (
+      {data && !data.available ? (
+        <div className="card stack" style={{ gap: 8 }}>
+          <h2 style={{ margin: 0 }}>No answer key for real data</h2>
+          <p style={{ margin: 0 }}>{data.reason}</p>
+          <p className="small muted" style={{ margin: 0 }}>
+            On real data, check the method by whether independent sources agree. For example, the late-delivery rate
+            (from delivery timestamps) and the delivery complaints mined from review text both spike in Nov 2017 and
+            Feb–Mar 2018. Switch the dataset to <b>Synthetic</b> (top right) to see the scored evaluation.
+          </p>
+        </div>
+      ) : !data ? (
         <div className="grid-4">
           {[0, 1, 2, 3].map((i) => <div key={i} className="card"><div className="skeleton" style={{ height: 52 }} /></div>)}
         </div>

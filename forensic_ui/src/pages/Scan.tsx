@@ -5,18 +5,21 @@ import type { InvestigateRequest } from "./Investigate";
 // Diverging scale: red = below baseline, blue = above, gray midpoint = normal.
 const DOWN = ["#f9d4d3", "#f1a3a2", "#e66767", "#c03535"];
 const UP = ["#cde2fb", "#9ec5f4", "#5598e7", "#256abf"];
-const STEPS = [2.5, 7.5, 15, 22.5];
+// Colour steps scale with how noisy the dataset is: real marketplace data swings far more month to month.
+const STEPS_SYNTHETIC = [2.5, 7.5, 15, 22.5];
+const STEPS_REAL = [12.5, 25, 50, 80];
 
-function cellColor(pct: number): { bg: string; ink: string } {
+function cellColor(pct: number, steps: number[]): { bg: string; ink: string } {
   const mag = Math.abs(pct);
   let step = -1;
-  STEPS.forEach((s, i) => {
+  steps.forEach((s, i) => {
     if (mag >= s) step = i;
   });
   if (step < 0) return { bg: "var(--surface-2)", ink: "var(--text-2)" };
   return { bg: (pct < 0 ? DOWN : UP)[step], ink: step >= 2 ? "#fff" : "#0b0b0b" };
 }
 
+const SIGNAL_LATE: Record<string, string> = { supply: "late" };
 const SIGNAL_CODE: Record<string, string> = {
   supply: "stock-out", returns: "returns", discount: "discount", price: "price",
   demand_down: "demand ↓", demand_up: "demand ↑",
@@ -36,6 +39,8 @@ export default function Scan({ meta, onInvestigate }: { meta: Meta; onInvestigat
 
   if (!cells) return <div className="empty"><span className="spinner" /> Scanning…</div>;
   const products = meta.products.filter((p) => p.has_sales);
+  const steps = meta.dataset.has_ground_truth ? STEPS_SYNTHETIC : STEPS_REAL;
+  const code = (s: string) => (!meta.dataset.has_inventory && SIGNAL_LATE[s]) || SIGNAL_CODE[s];
   const anomalies = cells.filter((c) => c.is_anomaly);
 
   return (
@@ -43,9 +48,12 @@ export default function Scan({ meta, onInvestigate }: { meta: Meta; onInvestigat
       <div className="page-head">
         <h1>Anomaly scan</h1>
         <p className="lede">
-          Every product × region × month, compared with the same series' other months (median baseline, robust z-score).
-          Outlined cells are anomalies: |z| ≥ 3 and a material change, or a stock-out, returns spike, discount or price
-          change. Tap any cell to investigate it.
+          Every product × region × month, compared with the same series'{" "}
+          {meta.dataset.baseline_window ? `surrounding ±${meta.dataset.baseline_window} months` : "other months"}{" "}
+          (median baseline, robust z-score).
+          Outlined cells are anomalies: |z| ≥ 3 and a material change in units,{" "}
+          {meta.dataset.has_inventory ? "or a stock-out, returns spike, discount or price change" : "or a spike in late deliveries or 1–2★ reviews"}.
+          Tap any cell to investigate it.
         </p>
       </div>
       <div className="grid-4">
@@ -59,7 +67,7 @@ export default function Scan({ meta, onInvestigate }: { meta: Meta; onInvestigat
           <span>Units/day vs. baseline:</span>
           <span className="ramp">{[...DOWN].reverse().map((c) => <span key={c} style={{ background: c }} />)}</span>
           <span>below</span>
-          <span className="swatch" style={{ background: "var(--surface-2)" }} /> normal (±2.5%)
+          <span className="swatch" style={{ background: "var(--surface-2)" }} /> normal (±{steps[0]}%)
           <span className="ramp">{UP.map((c) => <span key={c} style={{ background: c }} />)}</span>
           <span>above</span>
           <span style={{ marginLeft: 12 }}>
@@ -87,16 +95,16 @@ export default function Scan({ meta, onInvestigate }: { meta: Meta; onInvestigat
                       {meta.months.map((m) => {
                         const c = byKey.get(`${p.product_id}|${r}|${m}`);
                         if (!c) return <td key={m} />;
-                        const { bg, ink } = cellColor(c.units_pct);
-                        const sig = c.signals.filter((s) => !s.startsWith("demand")).map((s) => SIGNAL_CODE[s]);
+                        const { bg, ink } = cellColor(c.units_pct, steps);
+                        const sig = c.signals.filter((s) => !s.startsWith("demand")).map(code);
                         const sign = (v: number) => (v > 0 ? "+" : "");
                         const tip = [
                           `${p.product_name}, ${r}, ${monthLabel(m)}`,
                           `Units/day ${c.units_per_day.toLocaleString()} (${sign(c.units_pct)}${c.units_pct.toFixed(1)}%)`,
-                          `Returns rate ${sign(c.returns_pct)}${c.returns_pct.toFixed(0)}% vs. baseline`,
-                          `Stock-out days: ${c.stockout_days}`,
+                          `${meta.dataset.returns_label} ${sign(c.returns_pct)}${c.returns_pct.toFixed(0)}% vs. baseline`,
+                          meta.dataset.has_inventory ? `Stock-out days: ${c.stockout_days}` : `Late deliveries: ${c.late_rate ?? 0}%`,
                           `Anomaly score: ${c.anomaly_score}`,
-                          c.signals.length ? `Signals: ${c.signals.map((s) => SIGNAL_CODE[s]).join(", ")}` : "",
+                          c.signals.length ? `Signals: ${c.signals.map(code).join(", ")}` : "",
                         ].filter(Boolean).join("\n");
                         return (
                           <td key={m}>
