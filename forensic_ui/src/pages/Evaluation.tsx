@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, Evaluation } from "../api";
+import Icon from "../components/Icon";
 import type { InvestigateRequest } from "./Investigate";
 
 const METRICS: [string, string][] = [
@@ -10,6 +11,9 @@ const METRICS: [string, string][] = [
   ["confidence_label_accuracy", "Correct confidence label"],
   ["entity_extraction_accuracy", "Correct product/region/month"],
 ];
+
+const Pass = ({ ok }: { ok: boolean }) =>
+  ok ? <span className="badge good">✓ pass</span> : <span className="badge bad">✗ fail</span>;
 
 export default function EvaluationPage({ onInvestigate }: { onInvestigate: (r: InvestigateRequest) => void }) {
   const [data, setData] = useState<Evaluation | null>(null);
@@ -23,41 +27,44 @@ export default function EvaluationPage({ onInvestigate }: { onInvestigate: (r: I
 
   return (
     <div className="stack">
-      <div className="row">
-        <div>
+      <div className="page-head row" style={{ alignItems: "flex-end" }}>
+        <div style={{ flex: "1 1 420px" }}>
           <h1>Evaluation against ground truth</h1>
           <p className="lede">
-            Each scenario's question from <code>scenarios.py</code> is run through the full pipeline. The answer counts
-            only if the agents find the <i>injected</i> cause, cite the right document, and report the right evidence
-            case and confidence. Controls are months with no injected cause, where the correct answer is "nothing
-            happened".
+            Every question in <code>scenarios.py</code> runs through the full pipeline. A result passes only if the agents
+            find the <i>injected</i> cause, cite the right document, and report the right evidence case and confidence.
+            Controls are months with nothing injected, where the right answer is "nothing happened". Tap a row to open
+            that investigation.
           </p>
         </div>
-        <span className="spacer" />
         <button className="btn secondary" onClick={() => load(true)} disabled={loading}>
-          {loading ? "Running…" : "Re-run evaluation"}
+          {loading ? <span className="spinner" /> : <Icon name="refresh" size={16} />}
+          {loading ? "Running…" : "Re-run"}
         </button>
       </div>
       {!data ? (
-        <div className="empty"><span className="spinner" /> Running all investigations…</div>
+        <div className="grid-4">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="card"><div className="skeleton" style={{ height: 52 }} /></div>)}
+        </div>
       ) : (
         <>
-          <div className="grid-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
+          <div className="grid-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
             {METRICS.map(([k, label]) => {
               const m = data.summary[k];
               return (
-                <div key={k} className="card stat">
+                <div key={k} className={`card stat ${m.correct === m.total ? "good" : ""}`}>
                   <div className="value">{m.correct}/{m.total}</div>
                   <div className="label">{label}</div>
                 </div>
               );
             })}
           </div>
-          <div className="card table-wrap" style={{ padding: 0 }}>
+
+          <div className="card table-wrap eval-table" style={{ padding: 0 }}>
             <table>
               <thead>
                 <tr>
-                  <th>ID</th><th>Question</th><th>Expected cause</th><th>Predicted</th><th>Case</th>
+                  <th>ID</th><th>Question</th><th>Expected</th><th>Predicted</th><th>Case</th>
                   <th>Confidence</th><th>Doc</th><th>Result</th>
                 </tr>
               </thead>
@@ -69,19 +76,35 @@ export default function EvaluationPage({ onInvestigate }: { onInvestigate: (r: I
                     <td>{r.expected_cause}</td>
                     <td className={r.cause_ok ? "" : "no"}>{r.predicted_cause}</td>
                     <td className={r.case_ok ? "" : "no"}>{r.predicted_case}</td>
-                    <td className={r.confidence_ok ? "" : "no"}>
-                      {r.predicted_confidence} ({Math.round(r.confidence_score * 100)}%)
-                    </td>
-                    <td>
-                      {r.expected_document
-                        ? (r.citation_ok ? <span className="ok">✓</span> : <span className="no">✗</span>)
-                        : <span className="muted">n/a</span>}
-                    </td>
-                    <td>{r.all_ok ? <span className="badge good">✓ pass</span> : <span className="badge bad">✗ fail</span>}</td>
+                    <td className={r.confidence_ok ? "" : "no"}>{r.predicted_confidence} ({Math.round(r.confidence_score * 100)}%)</td>
+                    <td>{r.expected_document ? (r.citation_ok ? "✓" : "✗") : <span className="muted">n/a</span>}</td>
+                    <td><Pass ok={r.all_ok} /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="eval-cards">
+            {data.rows.map((r) => (
+              <div key={r.id} className="card eval-card" role="button" tabIndex={0}
+                onClick={() => onInvestigate({ question: r.question })}
+                onKeyDown={(e) => e.key === "Enter" && onInvestigate({ question: r.question })}>
+                <div className="row">
+                  <code>{r.id}</code>
+                  <span className="muted small">{r.target}</span>
+                  <span className="spacer" />
+                  <Pass ok={r.all_ok} />
+                </div>
+                <div className="q">{r.question}</div>
+                <dl className="kv">
+                  <dt>Expected</dt><dd>{r.expected_cause}</dd>
+                  <dt>Predicted</dt><dd>{r.predicted_cause}</dd>
+                  <dt>Case</dt><dd>{r.predicted_case}</dd>
+                  <dt>Confidence</dt><dd>{r.predicted_confidence} ({Math.round(r.confidence_score * 100)}%)</dd>
+                </dl>
+              </div>
+            ))}
           </div>
         </>
       )}
