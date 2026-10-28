@@ -38,6 +38,11 @@ def pct(v: float) -> str:
     return f"{v:+.1f}%"
 
 
+def qty(v: float) -> str:
+    """Units/day: whole numbers normally, one decimal for small real-data cells."""
+    return f"{v:,.1f}" if abs(v) < 10 else f"{v:,.0f}"
+
+
 class Citations:
     def __init__(self) -> None:
         self.items = []
@@ -57,7 +62,11 @@ class SynthesisAgent:
         c = Citations()
         name = plan.get("product_name") or plan.get("product_id") or "the product"
         region, month = plan.get("region"), plan.get("month")
-        ctx = {"name": name, "region": region, "month": month, "c": c, "plan": plan, "sql": sql, "rag": rag, "rca": rca}
+        ds = sql.get("dataset") or {"has_inventory": True, "has_discount": True, "currency": "$",
+                                    "returns_label": "returns rate", "baseline_window": None,
+                                    "units_pct_threshold": 5}
+        ctx = {"name": name, "region": region, "month": month, "c": c, "plan": plan, "sql": sql, "rag": rag, "rca": rca,
+               "ds": ds}
 
         structured_ok = bool(sql.get("available"))
         anomaly = bool(rca.get("available") and rca.get("is_anomaly"))
@@ -117,9 +126,10 @@ class SynthesisAgent:
     # -- citation helpers -----------------------------------------------------------------
     @staticmethod
     def _c_sales(ctx) -> str:
-        p = ctx["plan"]
+        p, w = ctx["plan"], ctx["ds"].get("baseline_window")
+        span = f"the surrounding \u00b1{w} months" if w else "the other months"
         return ctx["c"].cite("sales", "table", "sales.csv",
-                             f"{p['product_id']} / {ctx['region']}: {month_label(ctx['month'])} vs. the other months "
+                             f"{p['product_id']} / {ctx['region']}: {month_label(ctx['month'])} vs. {span} "
                              "of the same series (robust baseline)")
 
     @staticmethod
@@ -158,13 +168,21 @@ class SynthesisAgent:
                     "The descriptive layer cannot be quantified.")
         t = sql["target"]
         cs = self._c_sales(ctx)
-        text = (f"{name} in the {region} region sold {t['units_per_day']:,.0f} units/day in {month_label(ctx['month'])} "
-                f"({pct(t['units_per_day_pct'])} vs. a baseline of {t['units_per_day_base']:,.0f}")
+        text = (f"{name} in the {region} region sold {qty(t['units_per_day'])} units/day in "
+                f"{month_label(ctx['month'])} ({pct(t['units_per_day_pct'])} vs. a baseline of "
+                f"{qty(t['units_per_day_base'])}")
         if sql.get("previous_month") and t.get("units_prev_pct") is not None:
             text += f"; {pct(t['units_prev_pct'])} vs. {month_label(sql['previous_month'])}"
-        text += f") {cs}. Revenue was ${t['revenue']:,.0f} ({pct(t['revenue_per_day_pct'])} per day vs. baseline). "
-        text += (f"Returns rate {t['returns_rate']:.2f}% (baseline {t['returns_rate_base']:.2f}%), average discount "
-                 f"{t['avg_discount']:.1f}% (baseline {t['avg_discount_base']:.1f}%).")
+        ds = ctx["ds"]
+        text += (f") {cs}. Revenue was {ds['currency']}{t['revenue']:,.0f} ({pct(t['revenue_per_day_pct'])} per day "
+                 "vs. baseline). ")
+        text += (f"{ds['returns_label'][0].upper()}{ds['returns_label'][1:]} {t['returns_rate']:.2f}% "
+                 f"(baseline {t['returns_rate_base']:.2f}%)")
+        if ds["has_discount"]:
+            text += f", average discount {t['avg_discount']:.1f}% (baseline {t['avg_discount_base']:.1f}%)"
+        if not ds["has_inventory"] and t.get("late_rate") is not None:
+            text += f", late-delivery rate {t['late_rate']:.1f}% (baseline {t['late_rate_base']:.1f}%)"
+        text += "."
         s = sql["stockout"]
         if s["days"]:
             text += f" {s['warehouse']} had zero stock on {s['days']} day(s), {s['first']} to {s['last']} {self._c_inventory(ctx)}."
@@ -172,7 +190,7 @@ class SynthesisAgent:
             text += f" This month is statistically unusual for the series (anomaly score {t['anomaly_score']:.1f})."
         else:
             text += (f" This is within normal variation (units z = {t['units_per_day_z']:.1f}; RetailIQ needs |z| >= 3 "
-                     "and a change of at least 5%).")
+                     f"and a change of at least {ds.get('units_pct_threshold') or 5:g}%).")
         return text
 
     def _signal_sentences(self, ctx) -> list:
@@ -180,11 +198,15 @@ class SynthesisAgent:
         t, s = sql["target"], sql["stockout"]
         parts = []
         for fam in rca["signature"]:
-            if fam == "supply":
+            if fam == "supply" and not ctx["ds"]["has_inventory"]:
+                parts.append(f"the late-delivery rate rose to {t['late_rate']:.1f}% from a {t['late_rate_base']:.1f}% "
+                             f"baseline (z = {t['late_rate_z']:.1f}) {self._c_sales(ctx)}")
+            elif fam == "supply":
                 parts.append(f"a {s['days']}-day stock-out at {s['warehouse']} ({s['first']} to {s['last']}) "
                              f"{self._c_inventory(ctx)}")
             elif fam == "returns":
-                parts.append(f"the returns rate rose to {t['returns_rate']:.2f}% from a {t['returns_rate_base']:.2f}% "
+                parts.append(f"the {ctx['ds']['returns_label']} rose to {t['returns_rate']:.2f}% from a "
+                             f"{t['returns_rate_base']:.2f}% "
                              f"baseline ({pct(t['returns_rate_pct'])}, z = {t['returns_rate_z']:.1f}) {self._c_sales(ctx)}")
             elif fam == "discount":
                 parts.append(f"the average discount rose to {t['avg_discount']:.1f}% from {t['avg_discount_base']:.1f}% "
@@ -211,7 +233,10 @@ class SynthesisAgent:
     def _ruled_out(self, ctx) -> str:
         rca, rag = ctx["rca"], ctx["rag"]
         fired = {FAMILY_TO_CHECK[f] for f in rca["signature"]}
-        parts = [f"{CHECK_LABELS[ch['key']]} ({ch['detail']})" for ch in rca["checks"]
+        labels = dict(CHECK_LABELS)
+        if not ctx["ds"]["has_inventory"]:
+            labels["supply"] = "a delivery / logistics problem"
+        parts = [f"{labels[ch['key']]} ({ch['detail']})" for ch in rca["checks"]
                  if ch["key"] not in fired and ch["key"] != "demand"]
         text = ""
         if parts:
@@ -226,9 +251,14 @@ class SynthesisAgent:
         case, cause, doc, name = ctx["case"], ctx["cause"], ctx["doc"], ctx["name"]
         rca, sql, rag = ctx["rca"], ctx["sql"], ctx["rag"]
         if case == "full":
-            text = f"**Root cause: {cause['label']}**, confirmed by both the structured data and a document. "
+            title = "Confirmed issue" if self._consequence(ctx) else "Root cause"
+            text = f"**{title}: {cause['label']}**, confirmed by both the structured data and a document. "
             text += f"Structured evidence: {'; '.join(self._signal_sentences(ctx))}. "
             text += f"Documentary evidence: “{doc['quote']}” ({doc['title']}, {doc['date']}) {self._c_doc(ctx, doc)}. "
+            if self._consequence(ctx):
+                text += ("Units rose sharply at the same time, so the delivery problem looks like a consequence of the "
+                         "volume surge (carrier and seller capacity strain) rather than its cause. No document explains "
+                         "the surge itself. ")
             text += self._scope_sentence(ctx) + " " + self._ruled_out(ctx)
             return text.strip()
         if case == "conflict":
@@ -279,12 +309,12 @@ class SynthesisAgent:
         if not fc:
             return f"No forecast is possible: there is no sales history for {name}."
         cf = self._c_forecast(ctx, fc)
-        text = (f"Model forecast for {month_label(fc['next_month'])}: about {fc['predicted_per_day']:,.0f} units/day "
+        text = (f"Model forecast for {month_label(fc['next_month'])}: about {qty(fc['predicted_per_day'])} units/day "
                 f"({pct(fc['predicted_pct_vs_baseline'])} vs. baseline) {cf}.")
         if case in ("full", "structured_only", "conflict"):
             label = cause["label"].lower()
             text += (f" If the {label} persists at {month_label(ctx['month'])} intensity, expect about "
-                     f"{fc['if_cause_persists_per_day']:,.0f} units/day ({pct(fc['if_cause_persists_pct'])}).")
+                     f"{qty(fc['if_cause_persists_per_day'])} units/day ({pct(fc['if_cause_persists_pct'])}).")
             if abs(fc["predicted_pct_vs_baseline"]) < abs(fc["if_cause_persists_pct"]) / 2:
                 text += (" The model already expects a return towards baseline because the last weeks of the month were "
                          f"close to normal. That holds only if the {label} is resolved.")
@@ -311,11 +341,36 @@ class SynthesisAgent:
 
         if case == "none":
             return ["No action required. Keep monitoring: RetailIQ flags the series automatically if it moves beyond 3 "
-                    "robust standard deviations and 5%."]
+                    f"robust standard deviations and {ctx['ds'].get('units_pct_threshold') or 5:g}%."]
         if case == "no_data":
             return ["Load sales/inventory records or documents for this product so it can be investigated."]
 
-        if key in ("supplier_delay", "supply_disruption", "logistics_disruption"):
+        marketplace = not ctx["ds"]["has_inventory"]
+        if marketplace and key in ("logistics_disruption", "delivery_delays", "supplier_delay"):
+            if key == "delivery_delays":
+                acts.append(f"Find out which carriers and sellers caused the late deliveries in {region}: no review digest "
+                            "explains it. Pull the late orders for the month by seller and carrier.")
+            acts.append(f"Escalate with the carriers serving {region} and agree a recovery plan for open orders.")
+            acts.append(f"Temporarily extend the delivery dates promised to {region} customers so promises are kept, "
+                        "and proactively notify customers with late orders.")
+            if t.get("late_rate_base") is not None:
+                acts.append(f"Track the {region} late-delivery rate daily until it is back near the "
+                            f"{t['late_rate_base']:.1f}% baseline {self._c_sales(ctx)}.")
+        elif marketplace and key in ("quality_issue", "quality_or_returns_issue"):
+            acts.append(f"Identify the sellers behind the complaints for {name} in {region} and pause listings with "
+                        "repeated defect reports until resolved.")
+            acts.append("Contact the unhappy customers with a fast replacement or refund to protect ratings.")
+            if t.get("returns_rate_base") is not None:
+                acts.append(f"Track the {ctx['ds']['returns_label']} in {region} until it is back near the "
+                            f"{t['returns_rate_base']:.2f}% baseline {self._c_sales(ctx)}.")
+        elif marketplace and key in ("marketing_campaign", "demand_surge", "promotion"):
+            if key == "demand_surge":
+                acts.append("Identify the source of the extra demand (seasonal events such as Black Friday, campaigns, "
+                            "marketplace promotions); no review digest explains it.")
+            acts.append(f"Check that sellers and carriers serving {region} have capacity for the higher volume, so the "
+                        "spike does not turn into late deliveries.")
+            acts.append("Plan for demand to normalise afterwards and compare the uplift with the same period next year.")
+        elif key in ("supplier_delay", "supply_disruption", "logistics_disruption"):
             if key == "supply_disruption":
                 acts.append(f"Find out why {wh} ran out of stock: no document explains it. Ask "
                             f"{primary['supplier_name'] if primary else 'the supplier'} and the warehouse team for "
@@ -424,10 +479,19 @@ class SynthesisAgent:
         label = "high" if score >= 0.7 else "medium" if score >= 0.4 else "low"
         return {"score": score, "label": label, "reasons": reasons, "missing_source": missing}
 
+    @staticmethod
+    def _consequence(ctx) -> bool:
+        """A supply/delivery problem during a sales surge is an effect of the surge, not the cause of the change."""
+        return (ctx["case"] == "full" and ctx["cause"]["key"] in ("supplier_delay", "logistics_disruption")
+                and "demand_up" in (ctx["rca"].get("signature") or []))
+
     def _headline(self, ctx) -> str:
         case, cause, name, region, sql = ctx["case"], ctx["cause"], ctx["name"], ctx["region"], ctx["sql"]
         where = f"{name}, {region or 'all regions'}, {month_label(ctx['month'])}"
         change = f"{pct(sql['target']['units_per_day_pct'])} units/day vs. baseline" if sql.get("available") else ""
+        if case == "full" and self._consequence(ctx):
+            return (f"{where}: {change}, with {cause['label'].lower()} confirmed by data and documents, likely a "
+                    "consequence of the volume surge.")
         if case == "full":
             return f"{where}: {change}, caused by {cause['label'].lower()} (confirmed by data and documents)."
         if case == "conflict":

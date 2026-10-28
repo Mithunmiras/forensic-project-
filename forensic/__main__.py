@@ -1,6 +1,7 @@
 """Command line.
 
     python -m forensic generate              regenerate the synthetic data from scenarios.py
+    python -m forensic import-olist --src D  import the real Olist dataset from folder D
     python -m forensic ask "question"        run one investigation and print the answer
     python -m forensic evaluate              score the agents against the ground truth
     python -m forensic serve [--port 8000]   start the API + dashboard on localhost
@@ -31,6 +32,8 @@ def main() -> None:
     a.add_argument("question")
     a.add_argument("--json", action="store_true", help="print the full JSON result")
     sub.add_parser("evaluate", help="score the agents against scenarios.py")
+    o = sub.add_parser("import-olist", help="import the real Olist Brazilian e-commerce dataset")
+    o.add_argument("--src", required=True, help="folder containing the Olist CSV files")
     s = sub.add_parser("serve", help="start the API + dashboard on localhost")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8000)
@@ -54,6 +57,9 @@ def main() -> None:
         print("SOURCES")
         for c in ans["citations"]:
             print(f"  [{c['id']}] {c['label']}: {c['detail']}")
+    elif args.cmd == "import-olist":
+        from forensic.olist import import_olist
+        print(json.dumps(import_olist(args.src), indent=2))
     elif args.cmd == "evaluate":
         from forensic.evaluate import evaluate, print_report
         print_report(evaluate())

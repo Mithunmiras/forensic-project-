@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 
 from forensic.catalog import WAREHOUSE
-from forensic.metrics import MONTHLY_SQL, monthly_metrics
+from forensic.metrics import monthly_metrics, monthly_sql
 from forensic.store import DataStore
 
 DAILY_SQL = """
@@ -20,6 +20,14 @@ FROM sales s
 LEFT JOIN inventory i ON i.product_id = s.product_id AND i.date = s.date AND i.warehouse = ?
 WHERE s.product_id = ? AND s.region = ?
 ORDER BY s.date
+"""
+
+# Datasets without inventory: daily sales with delivery outcomes instead of stock.
+DAILY_SQL_DELIVERY = """
+SELECT date, units_sold AS units, returns, discount_pct AS discount, revenue, late_items, delivered_items
+FROM sales
+WHERE product_id = ? AND region = ?
+ORDER BY date
 """
 
 STOCKOUT_SQL = """
@@ -33,6 +41,7 @@ _TARGET_FIELDS = [
     "units_per_day_z", "units_prev_pct", "revenue_per_day", "revenue_per_day_base", "revenue_per_day_pct",
     "returns_rate", "returns_rate_base", "returns_rate_pct", "returns_rate_z", "avg_discount",
     "avg_discount_base", "price_index", "price_index_base", "price_index_pct", "stockout_days",
+    "late_rate", "late_rate_base", "late_rate_pct", "late_rate_z",
     "anomaly_score", "is_anomaly", "signals",
 ]
 
@@ -40,7 +49,7 @@ _TARGET_FIELDS = [
 def _clean(row) -> dict:
     out = {}
     for k in _TARGET_FIELDS:
-        v = row[k]
+        v = row.get(k, float("nan"))
         if isinstance(v, list):
             out[k] = v
         elif isinstance(v, (bool, np.bool_)):
@@ -57,9 +66,11 @@ class SQLAnalyticsAgent:
         self.store = store
 
     def run(self, product_id, region, month) -> dict:
-        queries = [{"purpose": "monthly metrics per product/region (baseline source)", "sql": MONTHLY_SQL.strip()}]
+        ds = self.store.dataset
+        queries = [{"purpose": "monthly metrics per product/region (baseline source)",
+                    "sql": monthly_sql(ds).strip()}]
         catalog_doc = self.store.catalog.get(product_id) if product_id else None
-        out = {"agent": self.name, "available": False, "reason": "", "queries": queries,
+        out = {"agent": self.name, "available": False, "reason": "", "queries": queries, "dataset": ds.public(),
                "product": None, "suppliers": {"primary": [], "backup": []}}
         if catalog_doc:
             out["product"] = {k: catalog_doc[k] for k in ("product_name", "category", "launch_date", "unit_price")}
@@ -71,7 +82,7 @@ class SQLAnalyticsAgent:
             out["reason"] = "No product identified."
             return out
         if not self.store.has_sales(product_id):
-            out["reason"] = f"No sales or inventory records exist for {product_id}."
+            out["reason"] = f"No sales records exist for {product_id}."
             return out
         if not region or not month:
             out["reason"] = "Region or month could not be determined."
@@ -86,14 +97,28 @@ class SQLAnalyticsAgent:
 
         t = target.iloc[0]
         prev = series[series["month"] < month].tail(1)
-        warehouse = WAREHOUSE[region]
-
-        daily = self.store.query(DAILY_SQL, (warehouse, product_id, region))
-        queries.append({"purpose": "daily sales joined to warehouse stock", "sql": DAILY_SQL.strip(),
-                        "params": [warehouse, product_id, region]})
-        stockouts = self.store.query(STOCKOUT_SQL, (product_id, warehouse, month))
-        queries.append({"purpose": "stock-out days in the month", "sql": STOCKOUT_SQL.strip(),
-                        "params": [product_id, warehouse, month]})
+        if ds.has_inventory:
+            warehouse = WAREHOUSE[region]
+            daily = self.store.query(DAILY_SQL, (warehouse, product_id, region))
+            queries.append({"purpose": "daily sales joined to warehouse stock", "sql": DAILY_SQL.strip(),
+                            "params": [warehouse, product_id, region]})
+            stockouts = self.store.query(STOCKOUT_SQL, (product_id, warehouse, month))
+            queries.append({"purpose": "stock-out days in the month", "sql": STOCKOUT_SQL.strip(),
+                            "params": [product_id, warehouse, month]})
+            stockout = {
+                "warehouse": warehouse, "days": len(stockouts),
+                "first": stockouts["date"].iloc[0] if len(stockouts) else None,
+                "last": stockouts["date"].iloc[-1] if len(stockouts) else None,
+                "reorder_point": int(daily["reorder_point"].dropna().iloc[0])
+                if daily["reorder_point"].notna().any() else None,
+            }
+            daily_cols = ["date", "units", "returns", "discount", "stock", "reorder_point"]
+        else:
+            daily = self.store.query(DAILY_SQL_DELIVERY, (product_id, region))
+            queries.append({"purpose": "daily sales with delivery outcomes", "sql": DAILY_SQL_DELIVERY.strip(),
+                            "params": [product_id, region]})
+            stockout = {"warehouse": None, "days": 0, "first": None, "last": None, "reorder_point": None}
+            daily_cols = ["date", "units", "returns", "discount", "late_items", "delivered_items"]
 
         same_month = df[df["month"] == month]
         other_regions = same_month[(same_month["product_id"] == product_id) & (same_month["region"] != region)]
@@ -107,18 +132,14 @@ class SQLAnalyticsAgent:
             "monthly": [{"month": r["month"], "units_per_day": round(r["units_per_day"], 1),
                          "baseline": round(r["units_per_day_base"], 1), "returns_rate": round(r["returns_rate"], 3),
                          "avg_discount": round(r["avg_discount"], 2), "stockout_days": int(r["stockout_days"]),
+                         **({"late_rate": round(r["late_rate"], 2), "late_rate_base": round(r["late_rate_base"], 2)}
+                            if not ds.has_inventory else {}),
                          "is_anomaly": bool(r["is_anomaly"])} for _, r in series.iterrows()],
             "other_regions": [{"region": r["region"], "units_per_day_pct": round(r["units_per_day_pct"], 2),
                                "is_anomaly": bool(r["is_anomaly"])} for _, r in other_regions.iterrows()],
             "other_products": [{"product_id": r["product_id"], "units_per_day_pct": round(r["units_per_day_pct"], 2),
                                 "stockout_days": int(r["stockout_days"])} for _, r in other_products.iterrows()],
-            "stockout": {
-                "warehouse": warehouse, "days": len(stockouts),
-                "first": stockouts["date"].iloc[0] if len(stockouts) else None,
-                "last": stockouts["date"].iloc[-1] if len(stockouts) else None,
-                "reorder_point": int(daily["reorder_point"].dropna().iloc[0]) if daily["reorder_point"].notna().any() else None,
-            },
-            "daily": daily[["date", "units", "returns", "discount", "stock", "reorder_point"]]
-                .fillna(0).to_dict(orient="records"),
+            "stockout": stockout,
+            "daily": daily[daily_cols].fillna(0).to_dict(orient="records"),
         })
         return out

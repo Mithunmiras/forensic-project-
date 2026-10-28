@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, CASE_INFO, Investigation, Meta, monthLabel, Summary } from "../api";
 import RichText from "../components/RichText";
 import Icon from "../components/Icon";
-import { DailyChart, MonthlyChart, StockChart } from "../components/Charts";
+import { DailyChart, LateChart, MonthlyChart, StockChart } from "../components/Charts";
 import { useMediaQuery } from "../hooks";
 
 export interface InvestigateRequest {
@@ -23,6 +23,7 @@ const CASE_GROUPS: [string, string, string][] = [
 export default function Investigate({ meta, pending }: { meta: Meta; pending: InvestigateRequest | null }) {
   const wide = useMediaQuery("(min-width: 1101px)");
   const [question, setQuestion] = useState(meta.examples[0]?.question ?? "");
+  const first = meta.examples[0];
   const [product, setProduct] = useState("");
   const [region, setRegion] = useState("");
   const [month, setMonth] = useState("");
@@ -71,7 +72,7 @@ export default function Investigate({ meta, pending }: { meta: Meta; pending: In
   useEffect(() => {
     if (!started.current && !pending) {
       started.current = true;
-      run({ question });
+      if (first) pick(first);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -91,13 +92,16 @@ export default function Investigate({ meta, pending }: { meta: Meta; pending: In
   const submit = () => {
     if (question.trim().length >= 3) run({ question, product_id: product, region, month }, true);
   };
-  const pick = (q: string) => {
-    setQuestion(q);
-    setProduct("");
-    setRegion("");
-    setMonth("");
-    run({ question: q }, true);
+  const pick = (x: Meta["examples"][number]) => {
+    setQuestion(x.question);
+    setProduct(x.product_id ?? "");
+    setRegion(x.region ?? "");
+    setMonth(x.month ?? "");
+    run({ question: x.question, product_id: x.product_id, region: x.region, month: x.month }, true);
   };
+  const quick = meta.dataset.has_ground_truth
+    ? meta.examples.filter((x) => ["SC01", "SC12", "SC13", "SC14", "CT03"].includes(x.id))
+    : meta.examples.slice(0, 5);
   const activeFilters = [product, region, month].filter(Boolean).length;
 
   return (
@@ -159,13 +163,14 @@ export default function Investigate({ meta, pending }: { meta: Meta; pending: In
 
         <div className="card">
           <button className="disclosure" onClick={() => setShowExamples((s) => !s)} aria-expanded={showExamples}>
-            Ground-truth scenarios <span className="badge">{meta.examples.length}</span>
+            {meta.dataset.has_ground_truth ? "Ground-truth scenarios" : "Detected in the real data"}{" "}
+            <span className="badge">{meta.examples.length}</span>
             <span className="chev"><Icon name="chevron" size={18} /></span>
           </button>
           {!showExamples && (
             <div className="chips" style={{ marginTop: 12 }}>
-              {meta.examples.filter((x) => ["SC01", "SC12", "SC13", "SC14", "CT03"].includes(x.id)).map((x) => (
-                <button key={x.id} className={`chip ${question === x.question ? "on" : ""}`} onClick={() => pick(x.question)}>
+              {quick.map((x) => (
+                <button key={x.id} className={`chip ${question === x.question ? "on" : ""}`} onClick={() => pick(x)}>
                   {x.id}: {x.question.replace(/^(Why|What|Is|Explain)\s+/, "").slice(0, 42)}…
                 </button>
               ))}
@@ -173,11 +178,11 @@ export default function Investigate({ meta, pending }: { meta: Meta; pending: In
           )}
           {showExamples && (
             <div className="examples fade-in">
-              {CASE_GROUPS.map(([key, label, color]) => (
+              {CASE_GROUPS.filter(([key]) => meta.examples.some((x) => x.case === key)).map(([key, label, color]) => (
                 <div key={key}>
                   <div className="group-label"><span className="dot" style={{ background: color }} />{label}</div>
                   {meta.examples.filter((x) => x.case === key).map((x) => (
-                    <button key={x.id} className={`example ${question === x.question ? "on" : ""}`} onClick={() => pick(x.question)}>
+                    <button key={x.id} className={`example ${question === x.question ? "on" : ""}`} onClick={() => pick(x)}>
                       <code>{x.id}</code>
                       {x.question}
                     </button>
@@ -416,10 +421,17 @@ function Result({ inv, loading, summary }: { inv: Investigation; loading: boolea
                   <h2>Monthly units/day vs. baseline</h2>
                   <MonthlyChart inv={inv} />
                 </div>
-                <div>
-                  <h2>Warehouse stock</h2>
-                  <StockChart inv={inv} />
-                </div>
+                {sql.stockout?.warehouse ? (
+                  <div>
+                    <h2>Warehouse stock</h2>
+                    <StockChart inv={inv} />
+                  </div>
+                ) : (
+                  <div>
+                    <h2>Late-delivery rate vs. baseline</h2>
+                    <LateChart inv={inv} />
+                  </div>
+                )}
               </div>
             </div>
           ) : <div className="empty">No structured data to chart. {sql.reason}</div>

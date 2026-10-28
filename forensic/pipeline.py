@@ -72,6 +72,6 @@ class Investigator:
                 "total_ms": round((time.perf_counter() - t0) * 1000, 1)}
 
 
-@lru_cache(maxsize=1)
-def get_investigator() -> Investigator:
-    return Investigator(get_store())
+@lru_cache(maxsize=4)
+def get_investigator(dataset: str = "synthetic") -> Investigator:
+    return Investigator(get_store(dataset))

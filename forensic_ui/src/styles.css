@@ -140,6 +140,11 @@ h3 { font-size: 11px; margin: 0 0 8px; text-transform: uppercase; letter-spacing
   display: grid; place-items: center; color: var(--muted);
 }
 .theme-toggle button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.ds-select { width: auto; padding: 6px 30px 6px 12px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  background-color: var(--surface-2); border-color: transparent; max-width: 210px; }
+@media (max-width: 600px) { .ds-select { font-size: 13px; max-width: 150px; padding-left: 10px; } .theme-toggle { display: none; } }
+.ds-banner { background: var(--warning-soft); border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; }
 main { max-width: 1320px; margin: 0 auto; padding: 24px; }
 .page-head { margin-bottom: 18px; }
 

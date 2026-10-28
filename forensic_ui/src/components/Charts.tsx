@@ -3,6 +3,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Line,
   LineChart,
   ReferenceArea,
@@ -16,7 +17,7 @@ import { Investigation, monthLabel } from "../api";
 import { useIsPhone } from "../hooks";
 
 const AXIS = { fontSize: 11, fill: "var(--muted)" };
-const fmt = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+const fmt = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: Math.abs(v) < 100 ? 1 : 0 });
 const shortMonth = (m: string) => new Date(`${m}-01T00:00:00`).toLocaleString("en-US", { month: "short" });
 const shortDate = (d: string) =>
   new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -145,7 +146,7 @@ export function MonthlyChart({ inv }: { inv: Investigation }) {
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }} barCategoryGap={6}>
           <CartesianGrid stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="label" tickFormatter={shortMonth} tick={AXIS} tickLine={false}
-            axisLine={{ stroke: "var(--border)" }} interval={0} />
+            axisLine={{ stroke: "var(--border)" }} interval={data.length > 12 ? "preserveStartEnd" : 0} minTickGap={6} />
           <YAxis tick={AXIS} tickFormatter={fmt} width={phone ? 40 : 48} tickLine={false} axisLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: "var(--surface-2)" }} />
           {base && <ReferenceLine y={base} stroke="var(--muted)" strokeDasharray="4 4" />}
@@ -155,6 +156,38 @@ export function MonthlyChart({ inv }: { inv: Investigation }) {
             ))}
           </Bar>
         </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function LateChart({ inv }: { inv: Investigation }) {
+  const phone = useIsPhone();
+  const sql = inv.agents.sql;
+  const data = (sql.monthly ?? []).map((m) => ({ label: m.month, late: m.late_rate ?? 0, base: m.late_rate_base ?? 0 }));
+  return (
+    <div>
+      <div className="chart-legend">
+        <span><i className="box" style={{ background: "var(--series-2)" }} />{monthLabel(sql.month)}</span>
+        <span><i className="box" style={{ background: "color-mix(in srgb, var(--series-2) 40%, transparent)" }} />Other months</span>
+        <span><i className="dash" style={{ borderColor: "var(--muted)" }} />Baseline (surrounding months)</span>
+      </div>
+      <ResponsiveContainer width="100%" height={phone ? 180 : 210}>
+        <ComposedChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }} barCategoryGap={4}>
+          <CartesianGrid stroke="var(--grid)" vertical={false} />
+          <XAxis dataKey="label" tickFormatter={shortMonth} tick={AXIS} tickLine={false}
+            axisLine={{ stroke: "var(--border)" }} minTickGap={8} />
+          <YAxis tick={AXIS} tickFormatter={(v) => `${v}%`} width={phone ? 36 : 44} tickLine={false} axisLine={false} />
+          <Tooltip content={<Tip />} cursor={{ fill: "var(--surface-2)" }} />
+          <Bar name="Late %" dataKey="late" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+            {data.map((m) => (
+              <Cell key={m.label} fill={m.label === sql.month ? "var(--series-2)"
+                : "color-mix(in srgb, var(--series-2) 40%, transparent)"} />
+            ))}
+          </Bar>
+          <Line name="Baseline %" dataKey="base" stroke="var(--muted)" strokeDasharray="4 4" strokeWidth={1.5}
+            dot={false} isAnimationActive={false} />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

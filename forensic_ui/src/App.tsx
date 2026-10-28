@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, Meta } from "./api";
+import { api, DatasetInfo, Meta, setDataset } from "./api";
 import Icon from "./components/Icon";
 import { Theme, useTheme } from "./hooks";
 import Investigate, { InvestigateRequest } from "./pages/Investigate";
@@ -23,16 +23,43 @@ const THEMES: [Theme, string, string][] = [
   ["dark", "moon", "Dark theme"],
 ];
 
+function readDataset(): string {
+  try {
+    return localStorage.getItem("retailiq-dataset") || "synthetic";
+  } catch {
+    return "synthetic";
+  }
+}
+
 export default function App() {
   const [tab, setTab] = useState<Tab>("investigate");
   const [meta, setMeta] = useState<Meta | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<InvestigateRequest | null>(null);
   const [theme, setTheme] = useTheme();
+  const [dataset, setDs] = useState(readDataset);
+  const [known, setKnown] = useState<DatasetInfo[]>([]);
 
   useEffect(() => {
-    api.meta().then(setMeta).catch((e) => setError(String(e)));
-  }, []);
+    setDataset(dataset);
+    setMeta(null);
+    setError(null);
+    setPending(null);
+    api.meta()
+      .then((m) => {
+        setMeta(m);
+        setKnown(m.datasets.filter((d) => d.available));
+      })
+      .catch((e) => {
+        if (dataset !== "synthetic") setDs("synthetic"); // e.g. the real dataset is not imported here
+        else setError(String(e));
+      });
+    try {
+      localStorage.setItem("retailiq-dataset", dataset);
+    } catch {
+      /* storage unavailable: the choice lasts for this visit */
+    }
+  }, [dataset]);
 
   const go = (t: Tab) => {
     setTab(t);
@@ -59,6 +86,14 @@ export default function App() {
           ))}
         </nav>
         <span className="spacer" />
+        {known.length > 1 && (
+          <select className="ds-select" value={dataset} onChange={(e) => setDs(e.target.value)} aria-label="Dataset"
+            title={meta?.dataset.description}>
+            {known.map((d) => (
+              <option key={d.key} value={d.key}>{d.key === "olist" ? "Real data · Olist" : "Synthetic · ground truth"}</option>
+            ))}
+          </select>
+        )}
         <div className="theme-toggle" role="radiogroup" aria-label="Theme">
           {THEMES.map(([t, icon, label]) => (
             <button key={t} className={theme === t ? "on" : ""} onClick={() => setTheme(t)} title={label}
@@ -77,7 +112,12 @@ export default function App() {
           </div>
         )}
         {meta && (
-          <>
+          <div key={meta.dataset.key}>
+            {!meta.dataset.has_ground_truth && (
+              <div className="ds-banner">
+                <b>Real data:</b> {meta.dataset.description} <span className="muted">Source: {meta.dataset.source}.</span>
+              </div>
+            )}
             <div hidden={tab !== "investigate"}>
               <Investigate meta={meta} pending={pending} />
             </div>
@@ -85,7 +125,7 @@ export default function App() {
             {tab === "library" && <Library meta={meta} />}
             {tab === "evaluation" && <EvaluationPage onInvestigate={investigate} />}
             {tab === "architecture" && <Architecture meta={meta} />}
-          </>
+          </div>
         )}
         {!meta && !error && <div className="empty"><span className="spinner" /> Loading…</div>}
       </main>

@@ -38,6 +38,35 @@ Other commands:
 
 UI development with hot reload: run `serve` in one terminal and `cd forensic_ui && npm run dev` in another. The UI is then at http://localhost:5173 and proxies `/api` to port 8000.
 
+## Real data: Olist Brazilian e-commerce
+
+Besides the synthetic dataset (which has ground truth), RetailIQ can investigate **real data**: the Olist Brazilian E-Commerce Public Dataset ([Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce), CC BY-NC-SA 4.0). Switch between the two with the dataset selector in the header.
+
+```bash
+.venv/bin/python -m forensic import-olist --src ~/Downloads/archive   # folder with the 9 Olist CSVs
+```
+
+The processed output is already in `data/olist/`. The raw download is not committed.
+
+| Synthetic concept | Olist mapping (all computed from the real data) |
+|---|---|
+| product | the 8 largest product categories |
+| region | Brazil's 5 IBGE macro-regions (from the customer's state) |
+| units / revenue | items purchased per day / item prices (R$) |
+| supply signal | **late-delivery rate**: delivered after the date promised to the customer (Olist has no inventory) |
+| returns signal | **share of 1–2★ reviews** (Olist has no returns) |
+| documents | a monthly **review digest** per category and region: complaint shares mined from the real review text, with real customer comments quoted in Portuguese |
+
+Real data needs different settings, all set in `forensic/datasets.py`:
+* The baseline is the surrounding ±3 months, because Olist grew about 8× over the period.
+* A change counts as material at 25% for units, plus a doubling of the late rate.
+* A month needs at least 60 items sold (or 40 deliveries) before any rate can be called unusual.
+* Discount and price signals are switched off (no data).
+
+**What it finds.** 40 of 720 cells are flagged. They cluster in **November 2017** (Black Friday: 1,176 orders on 24 Nov against about 250 on a normal day) and **February–March 2018** (late deliveries jumped from about 4% to 14–19%). Two independent sources agree on those months: delivery timestamps and delivery complaints in review text. Where they disagree, RetailIQ reports "data only, medium confidence" rather than inventing a cause.
+
+**No answer key.** Nobody recorded the true cause of each change, so the Evaluation page scores only the synthetic data.
+
 ## Optional LLM (Groq)
 
 Set `GROQ_API_KEY` to turn on two LLM features. Locally, put it in a `.env` file in the project root; git ignores that file. On Vercel, add it under **Settings → Environment Variables**. `GROQ_MODEL` is optional and defaults to `openai/gpt-oss-120b`.
@@ -116,7 +145,7 @@ Cause types: supplier delay, logistics disruption, quality issue, return-policy 
 | Correct confidence label | 24/24 |
 | Correct product/region/month extracted | 24/24 |
 
-Across the whole grid (6 products × 4 regions × 9 months = 216 cells), the 16 injected anomalies are flagged and none of the 200 normal cells is. `tests/` (19 tests) checks all of this.
+Across the whole grid (6 products × 4 regions × 9 months = 216 cells), the 16 injected anomalies are flagged and none of the 200 normal cells is. `tests/` (24 tests) checks all of this.
 
 ## Honest limitations
 
